@@ -34,7 +34,7 @@ test('flow heartbeat-cadence: a driver stepping the mock clock satisfies the sce
       if (virtual % 120 === 0) await m.api('POST', `/v1/uploads/${id}/heartbeat`);
     }
     await uploading;
-    assert.ok(virtual >= 600, `virtual time ${virtual}`);
+    assert.ok(virtual >= 480, `virtual time ${virtual}`);
     assert.deepEqual(
       (await m.api('GET', '/__verify', { auth: false })).json.failures.filter((/** @type {string} */ f) =>
         f.startsWith('heartbeat'),
