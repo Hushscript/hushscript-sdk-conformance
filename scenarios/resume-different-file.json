@@ -1,6 +1,6 @@
 {
   "name": "resume-different-file",
-  "description": "resume() with a file of a different size than the token's is refused before any request. The final call sends nothing.",
+  "description": "resume() with a file of a different size than the token's is refused with ResumeMismatchError before any request. The final call sends nothing.",
   "call": {
     "op": "resume",
     "args": { "file": "media/cbr-61s.mp3" },
@@ -12,7 +12,7 @@
   },
   "mock": { "account": { "balance_seconds": 36000 }, "jobFlow": [{ "state": "processing" }] },
   "expect": {
-    "error": { "class": "HushscriptError" },
+    "error": { "class": "ResumeMismatchError", "code": "resume_file_mismatch", "status": null },
     "noRequests": true,
     "requests": { "POST /v1/uploads": 1 },
     "state": { "jobs": 1 }

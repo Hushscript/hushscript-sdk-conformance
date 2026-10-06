@@ -1,12 +1,13 @@
 {
   "name": "create-429-no-retry-after",
-  "description": "The first create is rate limited without a Retry-After header; the SDK backs off and the second succeeds.",
+  "description": "The first create is rate limited without a Retry-After header; the SDK backs off at least 15 s and the second succeeds.",
   "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
   "mock": { "account": { "balance_seconds": 36000 }, "create": [{ "status": 429, "error": "rate_limited" }] },
   "expect": {
     "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
     "requests": { "POST /v1/uploads": 2 },
     "sameIdempotencyKey": "POST /v1/uploads",
+    "minGapSeconds": { "POST /v1/uploads": 15 },
     "state": { "jobs": 1, "holds": 0 }
   }
 }

@@ -316,7 +316,8 @@ export async function startMock(options = {}) {
       ]),
     );
     headers['authorization'] = req.headers.authorization === undefined ? 'absent' : 'present';
-    current.log.push({
+    /** @type {import('./types.js').LogEntry} */
+    const entry = {
       method,
       path,
       query,
@@ -325,9 +326,16 @@ export async function startMock(options = {}) {
       route: route === undefined ? `${method} (unmatched)` : `${method} ${route.pattern}`,
       t: current.now,
       idempotencyKey: typeof key === 'string' ? key : null,
-    });
+      status: null,
+    };
+    current.log.push(entry);
+    /** @param {Reply} reply */
+    const respond = (reply) => {
+      entry.status = reply.status;
+      send(res, reply);
+    };
     if (route === undefined) {
-      send(res, pathMatched ? { status: 405, json: { error: 'method_not_allowed' } } : errorReply('not_found'));
+      respond(pathMatched ? { status: 405, json: { error: 'method_not_allowed' } } : errorReply('not_found'));
       return;
     }
 
@@ -346,6 +354,10 @@ export async function startMock(options = {}) {
       bodyMd5: body.md5,
       token,
     };
+    if (route.auth && (token === null || !token.startsWith('hsr') || current.revoked.has(token))) {
+      respond(errorReply('unauthorized'));
+      return;
+    }
     const rule = pickRule(current, route.key, params);
     if (rule?.holdSeconds !== undefined && rule.holdSeconds > 0) {
       await waitForClock(current, current.now + rule.holdSeconds);
@@ -355,11 +367,7 @@ export async function startMock(options = {}) {
       return;
     }
     if (rule !== null && ((rule.status ?? 200) >= 400 || rule.error !== undefined)) {
-      send(res, injectedReply(rule, token));
-      return;
-    }
-    if (route.auth && (token === null || !token.startsWith('hsr') || current.revoked.has(token))) {
-      send(res, errorReply('unauthorized'));
+      respond(injectedReply(rule, token));
       return;
     }
     const reply = await route.handler(ctx);
@@ -367,7 +375,7 @@ export async function startMock(options = {}) {
       req.socket.destroy();
       return;
     }
-    send(res, reply);
+    respond(reply);
   };
 
   const server = createServer((req, res) => {

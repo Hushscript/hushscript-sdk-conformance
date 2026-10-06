@@ -45,6 +45,20 @@ export const CONFIG_KEYS = [
   'forwardCompat',
 ];
 
+export const RULE_KEYS = [
+  'status',
+  'error',
+  'extra',
+  'headers',
+  'text',
+  'echoToken',
+  'drop',
+  'holdSeconds',
+  'times',
+  'match',
+];
+export const MATCH_KEYS = ['n', 'afterDirectSuccess'];
+
 /** @returns {{ default_id: string | null, methods: import('./types.js').CardRow[] }} */
 function defaultCards() {
   return {
@@ -91,9 +105,25 @@ export function loadMock(raw) {
   for (const [key, value] of Object.entries(raw)) {
     if (STEP_KEYS.includes(key)) {
       if (!Array.isArray(value)) throw new Error(`mock.${key} must be an array of steps`);
-      // Array.isArray narrows unknown to any[]; the scenario tests check every step's shape.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      rules[key] = value;
+      /** @type {Rule[]} */
+      const steps = [];
+      for (const [index, step] of /** @type {unknown[]} */ (value).entries()) {
+        if (!isRecord(step)) throw new Error(`mock.${key}[${index}] must be an object`);
+        for (const stepKey of Object.keys(step)) {
+          if (!RULE_KEYS.includes(stepKey)) throw new Error(`unknown rule key: mock.${key}[${index}].${stepKey}`);
+        }
+        const match = step['match'];
+        if (match !== undefined) {
+          if (!isRecord(match)) throw new Error(`mock.${key}[${index}].match must be an object`);
+          for (const matchKey of Object.keys(match)) {
+            if (!MATCH_KEYS.includes(matchKey)) {
+              throw new Error(`unknown match key: mock.${key}[${index}].match.${matchKey}`);
+            }
+          }
+        }
+        steps.push(/** @type {Rule} */ (step));
+      }
+      rules[key] = steps;
     } else if (CONFIG_KEYS.includes(key)) {
       config[key] = value;
     } else {
