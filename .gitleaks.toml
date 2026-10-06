@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Mock self-tests use made-up idempotency keys and the made-up test token."
+paths = ['''mock/test/.*''', '''docs/runner-contract\.md''']

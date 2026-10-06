@@ -57,7 +57,9 @@ test('happy-direct: create, PUT parts to /__r2, complete, job, transcript', asyn
     assert.equal(routes.filter((/** @type {string} */ r) => r === 'POST /v1/uploads').length, 1);
     assert.equal(routes.filter((/** @type {string} */ r) => r === 'PUT /__r2/{job}/{n}').length, 3);
     const r2 = log.filter((/** @type {{ route: string }} */ e) => e.route === 'PUT /__r2/{job}/{n}');
-    assert.ok(r2.every((/** @type {{ headers: Record<string, string> }} */ e) => e.headers['authorization'] === 'absent'));
+    assert.ok(
+      r2.every((/** @type {{ headers: Record<string, string> }} */ e) => e.headers['authorization'] === 'absent'),
+    );
     assert.equal(log[0].headers['authorization'], 'present');
     assert.match(log[0].bodySha256, /^[0-9a-f]{64}$/);
 

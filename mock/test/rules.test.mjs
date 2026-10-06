@@ -1,16 +1,16 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { TEST_TOKEN, createJob, withMock } from './helpers.mjs';
+/** @typedef {import('./helpers.mjs').Mock} Mock */
+import { TEST_TOKEN, createJob, select, withMock } from './helpers.mjs';
 
 /**
- * @param {(m: Parameters<Parameters<typeof withMock>[0]>[0]) => Promise<void>} fn
+ * @param {(m: Mock) => Promise<void>} fn
  * @param {unknown} mock
  */
 function withRules(fn, mock) {
   return withMock(async (m) => {
-    const res = await m.api('POST', '/__scenario', { json: { mock }, auth: false });
-    assert.equal(res.status, 200);
+    await select(m, mock);
     await fn(m);
   });
 }
@@ -26,7 +26,13 @@ test('rules: injected statuses are consumed in order, then the route behaves nor
       assert.equal((await api('GET', '/v1/account')).status, 200);
       assert.equal((await api('GET', '/v1/account')).status, 200);
     },
-    { balance: [{ status: 502 }, { status: 429, error: 'rate_limited', headers: { 'Retry-After': '61' } }, { status: 200 }] },
+    {
+      balance: [
+        { status: 502 },
+        { status: 429, error: 'rate_limited', headers: { 'Retry-After': '61' } },
+        { status: 200 },
+      ],
+    },
   );
 });
 
@@ -73,7 +79,10 @@ test('rules: match on part number and on a prior direct success', async () => {
     },
     {
       account: { balance_seconds: 1000 },
-      r2: [{ match: { n: 2 }, status: 500 }, { match: { afterDirectSuccess: true }, status: 503 }],
+      r2: [
+        { match: { n: 2 }, status: 500 },
+        { match: { afterDirectSuccess: true }, status: 503 },
+      ],
     },
   );
 });
@@ -111,12 +120,18 @@ test('auth: missing, malformed and rotated-away tokens get unauthorized', async 
   await withMock(async ({ api }) => {
     const none = await api('GET', '/v1/account', { auth: false });
     assert.deepEqual(none.json, { error: 'unauthorized', code: 2000 });
-    assert.equal((await api('GET', '/v1/account', { auth: false, headers: { authorization: 'Bearer nope' } })).status, 401);
+    assert.equal(
+      (await api('GET', '/v1/account', { auth: false, headers: { authorization: 'Bearer nope' } })).status,
+      401,
+    );
     const rotated = await api('POST', '/v1/agent/credentials/rotate');
     assert.equal(rotated.status, 200);
     assert.match(rotated.json.pat, /^hsr1:eu:pat\.[0-9a-f]{32}\.[0-9a-f]{64}$/);
     assert.equal((await api('GET', '/v1/account')).status, 401);
-    const fresh = await api('GET', '/v1/account', { auth: false, headers: { authorization: `Bearer ${rotated.json.pat}` } });
+    const fresh = await api('GET', '/v1/account', {
+      auth: false,
+      headers: { authorization: `Bearer ${rotated.json.pat}` },
+    });
     assert.equal(fresh.status, 200);
   });
 });

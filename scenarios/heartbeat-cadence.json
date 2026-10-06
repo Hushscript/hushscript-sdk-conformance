@@ -2,7 +2,11 @@
   "name": "heartbeat-cadence",
   "description": "Eight parts, each held for 300 mock seconds. Heartbeats must arrive at most 120 s apart from create to complete.",
   "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
-  "mock": { "account": { "balance_seconds": 36000 }, "upload": { "parts": 8 }, "r2": [{ "holdSeconds": 300, "times": "always" }] },
+  "mock": {
+    "account": { "balance_seconds": 36000 },
+    "upload": { "parts": 8 },
+    "r2": [{ "holdSeconds": 300, "times": "always" }]
+  },
   "expect": {
     "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
     "heartbeat": { "maxGapSeconds": 120, "minCount": 4 },

@@ -68,8 +68,7 @@ async function readBody(req, keep) {
   /** @type {Buffer[]} */
   const chunks = [];
   let length = 0;
-  for await (const chunk of req) {
-    const buffer = /** @type {Buffer} */ (chunk);
+  for await (const buffer of /** @type {AsyncIterable<Buffer>} */ (req)) {
     sha.update(buffer);
     md5.update(buffer);
     length += buffer.length;
@@ -86,6 +85,7 @@ async function readBody(req, keep) {
 /**
  * @param {ServerResponse} res
  * @param {Reply} reply
+ * @returns {undefined}
  */
 function send(res, reply) {
   /** @type {Record<string, string>} */
@@ -103,6 +103,7 @@ function send(res, reply) {
   headers['content-length'] = String(Buffer.byteLength(body));
   res.writeHead(reply.status, headers);
   res.end(body);
+  return undefined;
 }
 
 /**
@@ -195,55 +196,81 @@ export async function startMock(options = {}) {
     const method = req.method ?? 'GET';
     const body = await readBody(req, true);
     const json = parseJson(body.text);
-    if (path === '/__health') return send(res, { status: 200, json: { ok: true } });
-    if (path === '/__log') return send(res, { status: 200, json: state.log });
-    if (path === '/__state') return send(res, { status: 200, json: stateSummary(state) });
-    if (path === '/__verify') return send(res, { status: 200, json: verify(state) });
+    if (path === '/__health') {
+      send(res, { status: 200, json: { ok: true } });
+      return;
+    }
+    if (path === '/__log') {
+      send(res, { status: 200, json: state.log });
+      return;
+    }
+    if (path === '/__state') {
+      send(res, { status: 200, json: stateSummary(state) });
+      return;
+    }
+    if (path === '/__verify') {
+      send(res, { status: 200, json: verify(state) });
+      return;
+    }
     if (path === '/__reset' && method === 'POST') {
       load(null, undefined, undefined);
-      return send(res, { status: 200, json: { ok: true } });
+      send(res, { status: 200, json: { ok: true } });
+      return;
     }
     if (path === '/__mark' && method === 'POST') {
       state.markIndex = state.log.length;
-      return send(res, { status: 200, json: { ok: true, index: state.markIndex } });
+      send(res, { status: 200, json: { ok: true, index: state.markIndex } });
+      return;
     }
     if (path === '/__clock') {
       if (method === 'POST') {
         const advance = field(json, 'advance');
         if (typeof advance !== 'number' || !Number.isFinite(advance) || advance < 0) {
-          return send(res, { status: 400, json: { error: 'bad_clock', detail: 'advance must be a number of seconds >= 0' } });
+          send(res, { status: 400, json: { error: 'bad_clock', detail: 'advance must be a number of seconds >= 0' } });
+          return;
         }
         advanceClock(state, advance);
       }
-      return send(res, { status: 200, json: { now: state.now } });
+      send(res, { status: 200, json: { now: state.now } });
+      return;
     }
     if (path === '/__scenarios') {
       const names = readdirSync(scenariosDir)
         .filter((file) => file.endsWith('.json'))
         .map((file) => file.slice(0, -'.json'.length))
         .sort();
-      return send(res, { status: 200, json: { scenarios: names } });
+      send(res, { status: 200, json: { scenarios: names } });
+      return;
     }
     if (path === '/__scenario' && method === 'POST') {
       const name = field(json, 'name');
       try {
         if (typeof name === 'string') {
           const scenario = readScenario(name, scenariosDir);
-          if (scenario === null) return send(res, { status: 404, json: { error: 'unknown_scenario', name } });
+          if (scenario === null) {
+            send(res, { status: 404, json: { error: 'unknown_scenario', name } });
+            return;
+          }
           load(name, scenario['mock'], scenario['expect']);
         } else if (isRecord(json) && 'mock' in json) {
           load('adhoc', json['mock'], json['expect']);
         } else {
-          return send(res, { status: 400, json: { error: 'bad_request', detail: 'send {name} or {mock}' } });
+          send(res, { status: 400, json: { error: 'bad_request', detail: 'send {name} or {mock}' } });
+          return;
         }
       } catch (error) {
-        return send(res, { status: 400, json: { error: 'bad_scenario', detail: String(error) } });
+        send(res, { status: 400, json: { error: 'bad_scenario', detail: String(error) } });
+        return;
       }
-      return send(res, { status: 200, json: { ok: true, name: state.scenario } });
+      send(res, { status: 200, json: { ok: true, name: state.scenario } });
+      return;
     }
     if (path.startsWith('/__files/') && method === 'GET') {
       const served = resolveServedFile(decodeURIComponent(path.slice('/__files/'.length)));
-      if (served === null) return send(res, { status: 404, json: { error: 'not_found', path: query['path'] ?? path } });
+      if (served === null) {
+        send(res, { status: 404, json: { error: 'not_found', path: query['path'] ?? path } });
+        return;
+      }
       res.writeHead(200, { 'content-type': served.type });
       res.end(readFileSync(served.file));
       return;
@@ -283,7 +310,10 @@ export async function startMock(options = {}) {
     }
     const key = field(json, 'idempotency_key');
     const headers = Object.fromEntries(
-      Object.entries(req.headers).map(([name, value]) => [name, Array.isArray(value) ? value.join(', ') : (value ?? '')]),
+      Object.entries(req.headers).map(([name, value]) => [
+        name,
+        Array.isArray(value) ? value.join(', ') : (value ?? ''),
+      ]),
     );
     headers['authorization'] = req.headers.authorization === undefined ? 'absent' : 'present';
     current.log.push({
@@ -297,7 +327,8 @@ export async function startMock(options = {}) {
       idempotencyKey: typeof key === 'string' ? key : null,
     });
     if (route === undefined) {
-      return send(res, pathMatched ? { status: 405, json: { error: 'method_not_allowed' } } : errorReply('not_found'));
+      send(res, pathMatched ? { status: 405, json: { error: 'method_not_allowed' } } : errorReply('not_found'));
+      return;
     }
 
     const token = bearerToken(req);
@@ -324,10 +355,12 @@ export async function startMock(options = {}) {
       return;
     }
     if (rule !== null && ((rule.status ?? 200) >= 400 || rule.error !== undefined)) {
-      return send(res, injectedReply(rule, token));
+      send(res, injectedReply(rule, token));
+      return;
     }
     if (route.auth && (token === null || !token.startsWith('hsr') || current.revoked.has(token))) {
-      return send(res, errorReply('unauthorized'));
+      send(res, errorReply('unauthorized'));
+      return;
     }
     const reply = await route.handler(ctx);
     if (rule?.drop === 'after-commit') {
@@ -339,7 +372,8 @@ export async function startMock(options = {}) {
 
   const server = createServer((req, res) => {
     handle(req, res).catch((/** @type {unknown} */ error) => {
-      if (!res.headersSent) send(res, { status: 500, json: { error: 'internal_error', code: 9000, detail: String(error) } });
+      if (!res.headersSent)
+        send(res, { status: 500, json: { error: 'internal_error', code: 9000, detail: String(error) } });
       else res.destroy();
     });
   });
@@ -384,9 +418,7 @@ if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
   const running = await startMock(parseArgs(process.argv.slice(2)));
   process.stdout.write(`READY ${running.port}\n`);
   const stop = () => {
-    void running.close().then(() => {
-      process.exit(0);
-    });
+    void running.close();
   };
   process.on('SIGTERM', stop);
   process.on('SIGINT', stop);

@@ -1,22 +1,13 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { createJob, FILE_SIZE, partBytes, withMock } from './helpers.mjs';
+/** @typedef {import('./helpers.mjs').Mock} Mock */
+import { createJob, FILE_SIZE, partBytes, select, withMock } from './helpers.mjs';
 
 const OPEN = { account: { balance_seconds: 36000 } };
 
 /**
- * @param {Parameters<Parameters<typeof withMock>[0]>[0]} m
- * @param {unknown} mock
- * @param {unknown} [expect]
- */
-async function select(m, mock, expect) {
-  const res = await m.api('POST', '/__scenario', { json: { mock, expect }, auth: false });
-  assert.equal(res.status, 200);
-}
-
-/**
- * @param {Parameters<Parameters<typeof withMock>[0]>[0]} m
+ * @param {Mock} m
  * @param {string} key
  */
 async function uploadedJob(m, key) {
@@ -49,10 +40,26 @@ test('jobs: default flow, phases by polls and by clock, failure fields, uploadin
     assert.equal((await m.api('GET', `/v1/jobs/${id}`)).json.state, 'processing');
     await m.advance(100);
     const failed = (await m.api('GET', `/v1/jobs/${id}`)).json;
-    assert.deepEqual([failed.state, failed.error, failed.failure_kind, failed.transcript_id], ['failed', 'bad audio', 'media_unreadable', null]);
+    assert.deepEqual(
+      [failed.state, failed.error, failed.failure_kind, failed.transcript_id],
+      ['failed', 'bad audio', 'media_unreadable', null],
+    );
     assert.deepEqual(Object.keys(failed).sort(), [
-      'actual_seconds', 'billable_seconds', 'created_at', 'declared_seconds', 'error', 'failure_kind', 'id', 'mode',
-      'options', 'private_result_available', 'private_result_expires_at', 'retry_of', 'state', 'transcript_id', 'verified_seconds',
+      'actual_seconds',
+      'billable_seconds',
+      'created_at',
+      'declared_seconds',
+      'error',
+      'failure_kind',
+      'id',
+      'mode',
+      'options',
+      'private_result_available',
+      'private_result_expires_at',
+      'retry_of',
+      'state',
+      'transcript_id',
+      'verified_seconds',
     ]);
     assert.equal((await m.api('GET', '/v1/jobs/job_missing')).status, 404);
   });
@@ -70,8 +77,19 @@ test('jobs: done assigns a transcript id and the transcript fixture is served un
     assert.equal(transcript.id, job.transcript_id);
     assert.equal(transcript.body.original.utterances.length, 10);
     assert.deepEqual(Object.keys(transcript).sort(), [
-      'auto_delete_at', 'body', 'client_code', 'created_at', 'duration_seconds', 'edited', 'id', 'language_detected',
-      'matter_code', 'speaker_names', 'tags', 'title', 'updated_at',
+      'auto_delete_at',
+      'body',
+      'client_code',
+      'created_at',
+      'duration_seconds',
+      'edited',
+      'id',
+      'language_detected',
+      'matter_code',
+      'speaker_names',
+      'tags',
+      'title',
+      'updated_at',
     ]);
     assert.equal((await m.api('GET', '/v1/transcripts/tr_unknown')).status, 404);
   });
@@ -99,7 +117,15 @@ test('transcripts list: cursor paging over 120 rows, limit clamp, forged cursor 
     assert.equal(first.transcripts.length, 50);
     assert.equal(first.transcripts[0].id, 'tr_list_001');
     assert.deepEqual(Object.keys(first.transcripts[0]).sort(), [
-      'auto_delete_at', 'created_at', 'duration_seconds', 'id', 'insights_state', 'language_detected', 'options', 'tags', 'title',
+      'auto_delete_at',
+      'created_at',
+      'duration_seconds',
+      'id',
+      'insights_state',
+      'language_detected',
+      'options',
+      'tags',
+      'title',
     ]);
     const second = (await m.api('GET', `/v1/transcripts?cursor=${first.next_cursor}`)).json;
     const third = (await m.api('GET', `/v1/transcripts?cursor=${second.next_cursor}`)).json;
@@ -146,25 +172,70 @@ test('account and billing: account shape, packs, cards, purchase with replay, de
   await withMock(async (m) => {
     await select(m, { account: { balance_seconds: 0, agent: true } });
     const account = (await m.api('GET', '/v1/account')).json;
-    assert.deepEqual(Object.keys(account).sort(), ['balance_seconds', 'card_on_file', 'credits_expire_at', 'data_region', 'held_seconds', 'limits', 'purchases_remaining_in_window']);
+    assert.deepEqual(Object.keys(account).sort(), [
+      'balance_seconds',
+      'card_on_file',
+      'credits_expire_at',
+      'data_region',
+      'held_seconds',
+      'limits',
+      'purchases_remaining_in_window',
+    ]);
     const packs = (await m.api('GET', '/v1/billing/packs')).json.packs;
-    assert.deepEqual(packs.map((/** @type {{ id: string }} */ p) => p.id), ['45min', '300min', '900min', '1800min', '6000min']);
-    assert.deepEqual(packs.map((/** @type {{ available: boolean }} */ p) => p.available), [true, true, false, false, false]);
+    assert.deepEqual(
+      packs.map((/** @type {{ id: string }} */ p) => p.id),
+      ['45min', '300min', '900min', '1800min', '6000min'],
+    );
+    assert.deepEqual(
+      packs.map((/** @type {{ available: boolean }} */ p) => p.available),
+      [true, true, false, false, false],
+    );
     const cards = (await m.api('GET', '/v1/billing/cards')).json;
     assert.equal(cards.default_id, 'pm_conf_default');
     assert.equal(cards.methods.length, 2);
 
-    const buy = { pack: '300min', idempotency_key: 'buy-1', quick_payment_method_id: 'pm_conf_default', policy_ack: false };
-    assert.deepEqual((await m.api('POST', '/v1/billing/purchase', { json: buy })).json, { status: 'ok', balance_seconds: 18000 });
-    assert.deepEqual((await m.api('POST', '/v1/billing/purchase', { json: buy })).json, { status: 'ok', balance_seconds: 18000 });
+    const buy = {
+      pack: '300min',
+      idempotency_key: 'buy-1',
+      quick_payment_method_id: 'pm_conf_default',
+      policy_ack: false,
+    };
+    assert.deepEqual((await m.api('POST', '/v1/billing/purchase', { json: buy })).json, {
+      status: 'ok',
+      balance_seconds: 18000,
+    });
+    assert.deepEqual((await m.api('POST', '/v1/billing/purchase', { json: buy })).json, {
+      status: 'ok',
+      balance_seconds: 18000,
+    });
     assert.equal((await m.api('GET', '/__state', { auth: false })).json.purchases.length, 1);
-    assert.equal((await m.api('POST', '/v1/billing/purchase', { json: { ...buy, idempotency_key: 'bad key!' } })).json.error, 'invalid_idempotency_key');
-    assert.equal((await m.api('POST', '/v1/billing/purchase', { json: { ...buy, idempotency_key: 'b2', pack: '7min' } })).json.error, 'unknown_pack');
-    assert.equal((await m.api('POST', '/v1/billing/purchase', { json: { ...buy, idempotency_key: 'b3', quick_payment_method_id: 'pm_x' } })).json.error, 'no_payment_method');
+    assert.equal(
+      (await m.api('POST', '/v1/billing/purchase', { json: { ...buy, idempotency_key: 'bad key!' } })).json.error,
+      'invalid_idempotency_key',
+    );
+    assert.equal(
+      (await m.api('POST', '/v1/billing/purchase', { json: { ...buy, idempotency_key: 'b2', pack: '7min' } })).json
+        .error,
+      'unknown_pack',
+    );
+    assert.equal(
+      (
+        await m.api('POST', '/v1/billing/purchase', {
+          json: { ...buy, idempotency_key: 'b3', quick_payment_method_id: 'pm_x' },
+        })
+      ).json.error,
+      'no_payment_method',
+    );
 
-    assert.deepEqual((await m.api('POST', '/v1/billing/cards/default', { json: { payment_method_id: 'pm_conf_other' } })).json, { ok: true });
+    assert.deepEqual(
+      (await m.api('POST', '/v1/billing/cards/default', { json: { payment_method_id: 'pm_conf_other' } })).json,
+      { ok: true },
+    );
     assert.equal((await m.api('GET', '/v1/billing/cards')).json.default_id, 'pm_conf_other');
-    assert.equal((await m.api('POST', '/v1/billing/cards/default', { json: { payment_method_id: 'pm_x' } })).status, 404);
+    assert.equal(
+      (await m.api('POST', '/v1/billing/cards/default', { json: { payment_method_id: 'pm_x' } })).status,
+      404,
+    );
     const setup = (await m.api('POST', '/v1/billing/setup-session', { json: {} })).json;
     assert.deepEqual(Object.keys(setup).sort(), ['checkout_url', 'expires_at', 'session_id']);
   });
@@ -172,20 +243,49 @@ test('account and billing: account shape, packs, cards, purchase with replay, de
 
 test('agent: signup checks terms and pack, claim works once, rotate returns a new token', async () => {
   await withMock(async (m) => {
-    const body = { contact_email: 'a@example.com', pack_id: '45min', accept_terms_version: '2026-10-01', agent: { name: 'bot', platform: 'test' } };
-    const stale = await m.api('POST', '/v1/agent/accounts', { json: { ...body, accept_terms_version: 'old' }, auth: false });
-    assert.deepEqual(stale.json, { error: 'policy_version_stale', code: 1043, details: { current_version: '2026-10-01' } });
-    assert.equal((await m.api('POST', '/v1/agent/accounts', { json: { ...body, pack_id: '900min' }, auth: false })).json.error, 'agent_pack_locked');
+    const body = {
+      contact_email: 'a@example.com',
+      pack_id: '45min',
+      accept_terms_version: '2026-10-01',
+      agent: { name: 'bot', platform: 'test' },
+    };
+    const stale = await m.api('POST', '/v1/agent/accounts', {
+      json: { ...body, accept_terms_version: 'old' },
+      auth: false,
+    });
+    assert.deepEqual(stale.json, {
+      error: 'policy_version_stale',
+      code: 1043,
+      details: { current_version: '2026-10-01' },
+    });
+    assert.equal(
+      (await m.api('POST', '/v1/agent/accounts', { json: { ...body, pack_id: '900min' }, auth: false })).json.error,
+      'agent_pack_locked',
+    );
     const signup = (await m.api('POST', '/v1/agent/accounts', { json: body, auth: false })).json;
-    assert.deepEqual(Object.keys(signup).sort(), ['amount', 'checkout_url', 'claim_secret', 'currency', 'expires_at', 'pack', 'signup_id']);
+    assert.deepEqual(Object.keys(signup).sort(), [
+      'amount',
+      'checkout_url',
+      'claim_secret',
+      'currency',
+      'expires_at',
+      'pack',
+      'signup_id',
+    ]);
 
     const path = `/v1/agent/accounts/${signup.signup_id}/claim`;
     assert.equal((await m.api('POST', path, { json: { claim_secret: 'wrong' }, auth: false })).json.code, 4036);
     const claim = (await m.api('POST', path, { json: { claim_secret: signup.claim_secret }, auth: false })).json;
     assert.deepEqual(Object.keys(claim).sort(), ['balance_seconds', 'pat', 'scopes', 'user_id']);
     assert.equal(claim.balance_seconds, 2700);
-    assert.equal((await m.api('POST', path, { json: { claim_secret: signup.claim_secret }, auth: false })).json.error, 'agent_claim_invalid');
-    const seeded = await m.api('POST', '/v1/agent/accounts/sg_conformance/claim', { json: { claim_secret: 'cs_conformance_secret' }, auth: false });
+    assert.equal(
+      (await m.api('POST', path, { json: { claim_secret: signup.claim_secret }, auth: false })).json.error,
+      'agent_claim_invalid',
+    );
+    const seeded = await m.api('POST', '/v1/agent/accounts/sg_conformance/claim', {
+      json: { claim_secret: 'cs_conformance_secret' },
+      auth: false,
+    });
     assert.equal(seeded.status, 200);
     const rotate = (await m.api('POST', '/v1/agent/credentials/rotate')).json;
     assert.deepEqual(Object.keys(rotate).sort(), ['pat', 'pat_id', 'scopes']);
@@ -213,7 +313,12 @@ test('verify: every expectation kind passes and fails as it should', async () =>
     assert.equal(bad.failures.length, 1);
     assert.match(bad.failures.join('\n'), /no requests to compare keys/);
 
-    await select(m, OPEN, { authorization: { 'GET /v1/account': 'absent' }, requests: { 'GET /v1/account': 1 }, requestsAtLeast: { 'GET /v1/account': 3 }, requestsAtMost: { 'GET /v1/account': 0 } });
+    await select(m, OPEN, {
+      authorization: { 'GET /v1/account': 'absent' },
+      requests: { 'GET /v1/account': 1 },
+      requestsAtLeast: { 'GET /v1/account': 3 },
+      requestsAtMost: { 'GET /v1/account': 0 },
+    });
     await m.api('GET', '/v1/account');
     assert.equal((await verify()).failures.length, 3);
 

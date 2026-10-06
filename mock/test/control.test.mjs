@@ -32,7 +32,16 @@ test('control: the log reduces Authorization and is not written for control call
       ['present', 'absent'],
     );
     assert.equal(JSON.stringify(log).includes('hsr1'), false);
-    assert.deepEqual(Object.keys(log[0]).sort(), ['bodySha256', 'headers', 'idempotencyKey', 'method', 'path', 'query', 'route', 't']);
+    assert.deepEqual(Object.keys(log[0]).sort(), [
+      'bodySha256',
+      'headers',
+      'idempotencyKey',
+      'method',
+      'path',
+      'query',
+      'route',
+      't',
+    ]);
   });
 });
 

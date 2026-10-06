@@ -91,7 +91,9 @@ export function loadMock(raw) {
   for (const [key, value] of Object.entries(raw)) {
     if (STEP_KEYS.includes(key)) {
       if (!Array.isArray(value)) throw new Error(`mock.${key} must be an array of steps`);
-      rules[key] = /** @type {Rule[]} */ (value);
+      // Array.isArray narrows unknown to any[]; the scenario tests check every step's shape.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      rules[key] = value;
     } else if (CONFIG_KEYS.includes(key)) {
       config[key] = value;
     } else {

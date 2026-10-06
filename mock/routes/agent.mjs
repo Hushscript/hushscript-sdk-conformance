@@ -17,7 +17,8 @@ const SCOPES = ['account:read', 'transcribe', 'transcripts:read', 'billing'];
  */
 function mintToken(state) {
   state.tokenSeq += 1;
-  const digest = (/** @type {string} */ label) => createHash('sha256').update(`${label}|${state.tokenSeq}`).digest('hex');
+  const digest = (/** @type {string} */ label) =>
+    createHash('sha256').update(`${label}|${state.tokenSeq}`).digest('hex');
   return `hsr1:eu:pat.${digest('a').slice(0, 32)}.${digest('b')}`;
 }
 

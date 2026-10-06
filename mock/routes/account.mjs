@@ -36,7 +36,9 @@ function packs(ctx) {
   const agent = ctx.state.config.account?.agent === true;
   return {
     status: 200,
-    json: { packs: PACKS.map((pack) => (agent ? { ...pack, available: pack.id === '45min' || pack.id === '300min' } : pack)) },
+    json: {
+      packs: PACKS.map((pack) => (agent ? { ...pack, available: pack.id === '45min' || pack.id === '300min' } : pack)),
+    },
   };
 }
 
@@ -65,7 +67,7 @@ function purchase(ctx) {
   const packId = body['pack'];
   const key = body['idempotency_key'];
   const card = body['quick_payment_method_id'];
-  if (typeof key !== 'string' || !/^[A-Za-z0-9_-]{1,128}$/.test(key)) return errorReply('invalid_idempotency_key');
+  if (typeof key !== 'string' || !/^[\w-]{1,128}$/.test(key)) return errorReply('invalid_idempotency_key');
   const pack = PACKS.find((candidate) => candidate.id === packId);
   if (pack === undefined) return errorReply('unknown_pack');
   if (typeof card !== 'string' || !state.cards.methods.some((candidate) => candidate.id === card)) {

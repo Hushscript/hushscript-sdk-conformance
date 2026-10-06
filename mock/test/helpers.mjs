@@ -11,14 +11,18 @@ export const TEST_TOKEN = `hsr1:eu:pat.${'0123456789abcdef'.repeat(2)}.${'fedcba
  * @property {any} json
  */
 
+/** @typedef {{ json?: unknown, body?: Uint8Array | string, headers?: Record<string, string>, auth?: boolean }} ApiOptions */
+/** @typedef {(method: string, path: string, opts?: ApiOptions) => Promise<Reply>} Api */
+/** @typedef {{ base: string, port: number, api: Api, scenario: (name: string) => Promise<Reply>, advance: (seconds: number) => Promise<Reply> }} Mock */
+
 /**
- * @param {(mock: { base: string, port: number, api: (method: string, path: string, opts?: { json?: unknown, body?: Uint8Array | string, headers?: Record<string, string>, auth?: boolean }) => Promise<Reply>, scenario: (name: string) => Promise<Reply>, advance: (seconds: number) => Promise<Reply> }) => Promise<void>} fn
+ * @param {(mock: Mock) => Promise<void>} fn
  * @param {{ scenariosDir?: string }} [options]
  */
 export async function withMock(fn, options = {}) {
   const running = await startMock({ port: 0, host: '127.0.0.1', ...options });
   const base = `http://127.0.0.1:${running.port}`;
-  /** @type {(method: string, path: string, opts?: { json?: unknown, body?: Uint8Array | string, headers?: Record<string, string>, auth?: boolean }) => Promise<Reply>} */
+  /** @type {Api} */
   const api = async (method, path, opts = {}) => {
     /** @type {Record<string, string>} */
     const headers = { ...opts.headers };
@@ -40,12 +44,13 @@ export async function withMock(fn, options = {}) {
     try {
       json = JSON.parse(text);
     } catch {
-      json = null;
+      // the body is not JSON; callers read `text`
     }
     return { status: res.status, headers: res.headers, text, json };
   };
   const scenario = (/** @type {string} */ name) => api('POST', '/__scenario', { json: { name }, auth: false });
-  const advance = (/** @type {number} */ seconds) => api('POST', '/__clock', { json: { advance: seconds }, auth: false });
+  const advance = (/** @type {number} */ seconds) =>
+    api('POST', '/__clock', { json: { advance: seconds }, auth: false });
   try {
     await fn({ base, port: running.port, api, scenario, advance });
   } finally {
@@ -56,7 +61,7 @@ export async function withMock(fn, options = {}) {
 export const FILE_SIZE = 161037;
 
 /**
- * @param {Awaited<ReturnType<typeof withMock>> extends never ? never : (method: string, path: string, opts?: { json?: unknown, body?: Uint8Array | string, headers?: Record<string, string>, auth?: boolean }) => Promise<Reply>} api
+ * @param {Api} api
  * @param {{ size?: number, duration?: number, key?: string }} [opts]
  */
 export function createJob(api, opts = {}) {
@@ -77,4 +82,15 @@ export function createJob(api, opts = {}) {
 export function partBytes(upload, n, size = FILE_SIZE) {
   const last = size - (upload.part_urls.length - 1) * upload.part_size_bytes;
   return new Uint8Array(n === upload.part_urls.length ? last : upload.part_size_bytes).fill(n);
+}
+
+/**
+ * Loads an ad-hoc scenario: a `mock` block and an optional `expect` block.
+ * @param {Mock} m
+ * @param {unknown} mock
+ * @param {unknown} [expect]
+ */
+export async function select(m, mock, expect) {
+  const res = await m.api('POST', '/__scenario', { json: { mock, expect }, auth: false });
+  if (res.status !== 200) throw new Error(`scenario load failed: ${res.text}`);
 }

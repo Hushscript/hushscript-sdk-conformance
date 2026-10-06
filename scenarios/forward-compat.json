@@ -8,6 +8,10 @@
     "jobFlow": [{ "state": "reviewing", "polls": 1 }, { "state": "processing", "polls": 1 }, { "state": "done" }]
   },
   "expect": {
-    "result": { "id": "tr_conf_0001", "utteranceCount": 6, "raw": { "x_unknown_field": { "nested": true, "list": [1, 2, 3] } } }
+    "result": {
+      "id": "tr_conf_0001",
+      "utteranceCount": 6,
+      "raw": { "x_unknown_field": { "nested": true, "list": [1, 2, 3] } }
+    }
   }
 }

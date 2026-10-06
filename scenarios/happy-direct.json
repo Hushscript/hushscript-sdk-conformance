@@ -5,7 +5,13 @@
   "mock": { "account": { "balance_seconds": 36000 } },
   "expect": {
     "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
-    "requests": { "POST /v1/uploads": 1, "GET /v1/account": 1, "PUT /__r2/{job}/{n}": 3, "PUT /v1/uploads/{job}/parts/{n}": 0, "POST /v1/uploads/{job}/complete": 1 },
+    "requests": {
+      "POST /v1/uploads": 1,
+      "GET /v1/account": 1,
+      "PUT /__r2/{job}/{n}": 3,
+      "PUT /v1/uploads/{job}/parts/{n}": 0,
+      "POST /v1/uploads/{job}/complete": 1
+    },
     "authorization": { "POST /v1/uploads": "present", "PUT /__r2/{job}/{n}": "absent" },
     "state": { "jobs": 1, "holds": 0 }
   }

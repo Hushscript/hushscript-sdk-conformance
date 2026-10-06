@@ -15,6 +15,7 @@ import { findJob, isJob } from './uploads.mjs';
 /** @typedef {import('../types.js').RouteDef} RouteDef */
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'fixtures', 'transcripts');
+/** @type {Phase[]} */
 const DEFAULT_FLOW = [{ state: 'processing', polls: 1 }, { state: 'done' }];
 const CURSOR_PREFIX = 'cur_';
 
@@ -37,7 +38,9 @@ function loadFixture(name) {
  * @returns {Record<string, unknown>}
  */
 function transcriptDetail(state, base, id, title) {
-  const detail = { ...base, id, ...(title === null ? {} : { title }) };
+  /** @type {Record<string, unknown>} */
+  const detail = { ...base, id };
+  if (title !== null) detail['title'] = title;
   if (state.config.forwardCompat !== true) return detail;
   const body = isRecord(detail['body']) ? detail['body'] : {};
   const original = isRecord(body['original']) ? body['original'] : {};

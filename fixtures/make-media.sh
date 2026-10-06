@@ -52,7 +52,7 @@ head -c 4096 "$out/flac-20s.flac" >"$out/truncated.flac"
 {
   echo "{"
   first=1
-  for f in $(cd "$out" && ls | LC_ALL=C sort); do
+  for f in $(find "$out" -maxdepth 1 -type f -printf '%f\n' | LC_ALL=C sort); do
     [ "$f" = durations.json ] && continue
     d="$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$out/$f" 2>/dev/null || true)"
     if [[ "$f" == vbr-noxing-* ]]; then

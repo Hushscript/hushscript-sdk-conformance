@@ -127,7 +127,8 @@ export function verify(state) {
     const timeline = [...(start === undefined ? [] : [start]), ...beats, ...(end === undefined ? [] : [end])];
     for (let i = 1; i < timeline.length; i++) {
       const gap = (timeline[i] ?? 0) - (timeline[i - 1] ?? 0);
-      if (gap > expect.heartbeat.maxGapSeconds) failures.push(`heartbeat: gap of ${gap} s exceeds ${expect.heartbeat.maxGapSeconds} s`);
+      if (gap > expect.heartbeat.maxGapSeconds)
+        failures.push(`heartbeat: gap of ${gap} s exceeds ${expect.heartbeat.maxGapSeconds} s`);
     }
   }
   return { ok: failures.length === 0, failures };

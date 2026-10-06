@@ -24,7 +24,6 @@ function signature(jobId, n, exp) {
 }
 
 /**
- * @param {string} body
  * @param {number} status
  * @param {string} code
  * @param {string} message
@@ -220,7 +219,7 @@ function proxiedPart(ctx) {
   const n = Number(ctx.params['n']);
   if (!Number.isInteger(n) || n < 1) return errorReply('bad_part_number');
   if (job.state !== 'uploading') return errorReply('wrong_state');
-  const type = String(ctx.headers['content-type'] ?? '');
+  const type = ctx.headers['content-type'] ?? '';
   if (!type.startsWith('application/octet-stream')) return errorReply('bad_request');
   if (ctx.bodyLength > MAX_PART_BYTES) return errorReply('part_too_large');
   job.parts.set(n, { n, size: ctx.bodyLength, md5: ctx.bodyMd5, via: 'proxied' });
@@ -233,23 +232,37 @@ function r2Put(ctx) {
   const jobId = ctx.params['job'] ?? '';
   const n = Number(ctx.params['n']);
   const job = state.jobs.get(jobId);
-  if (job === undefined || job.totalParts === null || !Number.isInteger(n) || n < 1 || n > job.totalParts) {
+  const total = job?.totalParts ?? null;
+  if (job === undefined || total === null || !Number.isInteger(n) || n < 1 || n > total) {
     return r2Error(404, 'NoSuchKey', 'The specified key does not exist.');
   }
-  if (ctx.headers['authorization'] !== undefined) {
-    return r2Error(400, 'InvalidArgument', 'Only one auth mechanism allowed; only the X-Amz-Algorithm query parameter, Signature query string parameter or the Authorization header should be specified');
+  if (ctx.headers.authorization !== undefined) {
+    return r2Error(
+      400,
+      'InvalidArgument',
+      'Only one auth mechanism allowed; only the X-Amz-Algorithm query parameter, Signature query string parameter or the Authorization header should be specified',
+    );
   }
   const [expText = '', hash = ''] = (ctx.query['sig'] ?? '').split('.');
   const exp = Number(expText);
   if (!Number.isInteger(exp) || hash !== signature(jobId, n, exp)) {
-    return r2Error(403, 'SignatureDoesNotMatch', 'The request signature we calculated does not match the signature you provided.');
+    return r2Error(
+      403,
+      'SignatureDoesNotMatch',
+      'The request signature we calculated does not match the signature you provided.',
+    );
   }
   if (exp < state.now) return r2Error(403, 'AccessDenied', 'Request has expired');
-  if (ctx.headers['content-length'] === undefined) return r2Error(411, 'MissingContentLength', 'You must provide the Content-Length HTTP header.');
+  if (ctx.headers['content-length'] === undefined)
+    return r2Error(411, 'MissingContentLength', 'You must provide the Content-Length HTTP header.');
   const partSize = job.partSize ?? 0;
-  const expected = n < job.totalParts ? partSize : job.size - partSize * (job.totalParts - 1);
+  const expected = n < total ? partSize : job.size - partSize * (total - 1);
   if (ctx.bodyLength !== expected) {
-    return r2Error(400, 'IncompleteBody', `The request body is ${ctx.bodyLength} bytes; this part must be ${expected}.`);
+    return r2Error(
+      400,
+      'IncompleteBody',
+      `The request body is ${ctx.bodyLength} bytes; this part must be ${expected}.`,
+    );
   }
   state.directSuccesses += 1;
   if (!(state.config.upload?.loseParts ?? []).includes(n)) {

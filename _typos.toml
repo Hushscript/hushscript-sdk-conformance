@@ -1,0 +1,2 @@
+[files]
+extend-exclude = ["fixtures/**", "package-lock.json", "mock/errors.mjs"]

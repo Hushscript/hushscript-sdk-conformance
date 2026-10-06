@@ -7,27 +7,74 @@ import { STEP_KEYS, loadMock } from '../state.mjs';
 const ROOT = new URL('../../', import.meta.url);
 
 const REQUIRED = [
-  'happy-direct', 'happy-proxied', 'direct-fails-first-part', 'direct-fails-after-success', 'r2-403-expired-url',
-  'part-urls-paging', 'create-429-no-retry-after', 'create-network-drop-after-commit', 'too-many-active-jobs',
-  'heartbeat-cadence', 'complete-returns-done', 'complete-upload-incomplete', 'job-failed', 'wait-timeout-then-resume',
-  'resume-different-file', 'insufficient-balance-preflight', 'insufficient-balance-server', 'unsupported-media',
-  'too-short', 'buy-happy', 'buy-no-card', 'buy-502-then-ok', 'buy-4021', 'scope-missing', 'retry-after-61',
-  'claim-lost-response', 'rotate-lost-response', 'list-pagination', 'redaction', 'forward-compat', 'probe-durations',
+  'happy-direct',
+  'happy-proxied',
+  'direct-fails-first-part',
+  'direct-fails-after-success',
+  'r2-403-expired-url',
+  'part-urls-paging',
+  'create-429-no-retry-after',
+  'create-network-drop-after-commit',
+  'too-many-active-jobs',
+  'heartbeat-cadence',
+  'complete-returns-done',
+  'complete-upload-incomplete',
+  'job-failed',
+  'wait-timeout-then-resume',
+  'resume-different-file',
+  'insufficient-balance-preflight',
+  'insufficient-balance-server',
+  'unsupported-media',
+  'too-short',
+  'buy-happy',
+  'buy-no-card',
+  'buy-502-then-ok',
+  'buy-4021',
+  'scope-missing',
+  'retry-after-61',
+  'claim-lost-response',
+  'rotate-lost-response',
+  'list-pagination',
+  'redaction',
+  'forward-compat',
+  'probe-durations',
   'format-goldens',
 ];
-const OPS = ['transcribe', 'resume', 'balance', 'listTranscripts', 'getTranscript', 'buy', 'claim', 'rotate', 'probe', 'format'];
+const OPS = [
+  'transcribe',
+  'resume',
+  'balance',
+  'listTranscripts',
+  'getTranscript',
+  'buy',
+  'claim',
+  'rotate',
+  'probe',
+  'format',
+];
 const EXPECT_KEYS = [
-  'result', 'error', 'requests', 'requestsAtLeast', 'requestsAtMost', 'noRequests', 'sameIdempotencyKey',
-  'authorization', 'queries', 'state', 'heartbeat',
+  'result',
+  'error',
+  'requests',
+  'requestsAtLeast',
+  'requestsAtMost',
+  'noRequests',
+  'sameIdempotencyKey',
+  'authorization',
+  'queries',
+  'state',
+  'heartbeat',
 ];
 
-/** @param {string} name @returns {Record<string, any>} */
+/** @param {string} name @returns {any} */
 function scenario(name) {
   return JSON.parse(readFileSync(new URL(`scenarios/${name}.json`, ROOT), 'utf8'));
 }
 
 test('scenarios: exactly the rows of the spec table exist', () => {
-  const files = readdirSync(new URL('scenarios/', ROOT)).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -5));
+  const files = readdirSync(new URL('scenarios/', ROOT))
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.slice(0, -5));
   assert.deepEqual([...files].sort(), [...REQUIRED].sort());
 });
 
@@ -60,7 +107,8 @@ test('scenarios: error codes named in scenarios exist in the catalog', async () 
     const s = scenario(name);
     for (const key of STEP_KEYS) {
       const rules = s.mock[key] ?? [];
-      for (const rule of rules) if (rule.error !== undefined) assert.ok(ERROR_CATALOG[rule.error], `${name}: ${rule.error}`);
+      for (const rule of rules)
+        if (rule.error !== undefined) assert.ok(ERROR_CATALOG[rule.error], `${name}: ${rule.error}`);
     }
   }
 });

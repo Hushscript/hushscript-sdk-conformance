@@ -10,7 +10,10 @@
       "expectError": { "class": "WaitTimeoutError", "fields": { "resumeToken": "<present>" } }
     }
   },
-  "mock": { "account": { "balance_seconds": 36000 }, "jobFlow": [{ "state": "processing", "untilClock": 200 }, { "state": "done" }] },
+  "mock": {
+    "account": { "balance_seconds": 36000 },
+    "jobFlow": [{ "state": "processing", "untilClock": 200 }, { "state": "done" }]
+  },
   "expect": {
     "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
     "state": { "jobs": 1, "holds": 0 }

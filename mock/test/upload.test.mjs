@@ -2,18 +2,9 @@
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { test } from 'node:test';
-import { FILE_SIZE, createJob, partBytes, withMock } from './helpers.mjs';
+import { FILE_SIZE, createJob, partBytes, select, withMock } from './helpers.mjs';
 
 const OPEN = { account: { balance_seconds: 36000 } };
-
-/**
- * @param {Parameters<Parameters<typeof withMock>[0]>[0]} m
- * @param {unknown} mock
- */
-async function select(m, mock) {
-  const res = await m.api('POST', '/__scenario', { json: { mock }, auth: false });
-  assert.equal(res.status, 200);
-}
 
 /**
  * @param {{ part_size_bytes: number, part_urls: { n: number, url: string }[] }} upload
@@ -29,19 +20,47 @@ test('create: validation, balance hold and idempotent replay', async () => {
   await withMock(async (m) => {
     await select(m, OPEN);
     const { api } = m;
-    assert.equal((await api('POST', '/v1/uploads', { json: { size_bytes: 0, duration_seconds: 21 } })).json.error, 'size_out_of_range');
-    assert.equal((await api('POST', '/v1/uploads', { json: { size_bytes: 10, duration_seconds: 14 } })).json.error, 'duration_out_of_range');
+    assert.equal(
+      (await api('POST', '/v1/uploads', { json: { size_bytes: 0, duration_seconds: 21 } })).json.error,
+      'size_out_of_range',
+    );
+    assert.equal(
+      (await api('POST', '/v1/uploads', { json: { size_bytes: 10, duration_seconds: 14 } })).json.error,
+      'duration_out_of_range',
+    );
     assert.equal((await api('POST', '/v1/uploads', { json: { size_bytes: 10, duration_seconds: 36001 } })).status, 422);
-    assert.equal((await api('POST', '/v1/uploads', { json: { size_bytes: 10, duration_seconds: 20, idempotency_key: 'short' } })).json.code, 1040);
+    assert.equal(
+      (await api('POST', '/v1/uploads', { json: { size_bytes: 10, duration_seconds: 20, idempotency_key: 'short' } }))
+        .json.code,
+      1040,
+    );
     assert.equal((await api('POST', '/v1/uploads', { body: 'not json' })).json.error, 'bad_request');
 
     const first = await createJob(api);
-    assert.deepEqual(Object.keys(first.json).sort(), ['balance_seconds', 'funding', 'held_seconds', 'job_id', 'limits', 'state', 'upload']);
+    assert.deepEqual(Object.keys(first.json).sort(), [
+      'balance_seconds',
+      'funding',
+      'held_seconds',
+      'job_id',
+      'limits',
+      'state',
+      'upload',
+    ]);
     assert.equal(first.json.balance_seconds, 36000 - 21);
     assert.equal(first.json.held_seconds, 21);
     assert.equal(first.json.state, 'uploading');
-    assert.deepEqual(Object.keys(first.json.limits).sort(), ['active_jobs', 'max_active_jobs', 'max_daily_seconds', 'used_today_seconds']);
-    assert.deepEqual(Object.keys(first.json.upload).sort(), ['next_part_number', 'part_size_bytes', 'part_urls', 'total_parts']);
+    assert.deepEqual(Object.keys(first.json.limits).sort(), [
+      'active_jobs',
+      'max_active_jobs',
+      'max_daily_seconds',
+      'used_today_seconds',
+    ]);
+    assert.deepEqual(Object.keys(first.json.upload).sort(), [
+      'next_part_number',
+      'part_size_bytes',
+      'part_urls',
+      'total_parts',
+    ]);
 
     const replay = await createJob(api);
     assert.equal(replay.json.job_id, first.json.job_id);
@@ -57,7 +76,13 @@ test('create: 402 with details when the balance is short, 429 at the active-job 
     await select(m, { account: { balance_seconds: 10, held_seconds: 4 } });
     const short = await createJob(m.api);
     assert.equal(short.status, 402);
-    assert.deepEqual(short.json, { error: 'insufficient_balance', code: 3001, needed_seconds: 21, balance_seconds: 10, held_seconds: 4 });
+    assert.deepEqual(short.json, {
+      error: 'insufficient_balance',
+      code: 3001,
+      needed_seconds: 21,
+      balance_seconds: 10,
+      held_seconds: 4,
+    });
     await select(m, { account: { balance_seconds: 36000, max_active_jobs: 1 } });
     await createJob(m.api);
     const capped = await createJob(m.api, { key: 'another-key-1234567' });
@@ -101,10 +126,17 @@ test('r2: signature, expiry, Authorization, Content-Length and size checks', asy
 
     const tampered = page.part_urls[1].url.replace(/sig=(\d+)\.[0-9a-f]+/, 'sig=$1.deadbeef');
     assert.equal((await fetch(tampered, { method: 'PUT', body: partBytes(page, 2) })).status, 403);
-    const withAuth = await fetch(page.part_urls[1].url, { method: 'PUT', body: partBytes(page, 2), headers: { authorization: 'Bearer x' } });
+    const withAuth = await fetch(page.part_urls[1].url, {
+      method: 'PUT',
+      body: partBytes(page, 2),
+      headers: { authorization: 'Bearer x' },
+    });
     assert.equal(withAuth.status, 400);
     assert.equal((await fetch(page.part_urls[1].url, { method: 'PUT', body: new Uint8Array(5) })).status, 400);
-    assert.equal((await fetch(page.part_urls[1].url.replace('/2?', '/9?'), { method: 'PUT', body: new Uint8Array(5) })).status, 404);
+    assert.equal(
+      (await fetch(page.part_urls[1].url.replace('/2?', '/9?'), { method: 'PUT', body: new Uint8Array(5) })).status,
+      404,
+    );
 
     const status = await new Promise((resolve, reject) => {
       const url = new URL(page.part_urls[1].url);
@@ -125,8 +157,12 @@ test('complete: strict part check, etags, ordering, failure releases the hold', 
     const create = await createJob(m.api);
     const { upload, job_id: id } = create.json;
     const etags = [];
-    for (const part of upload.part_urls.slice(0, 2)) etags.push({ n: part.n, etag: (await putPart(upload, part)).etag });
-    assert.equal((await m.api('POST', `/v1/uploads/${id}/complete`, { json: { parts: etags.reverse() } })).json.error, 'bad_request');
+    for (const part of upload.part_urls.slice(0, 2))
+      etags.push({ n: part.n, etag: (await putPart(upload, part)).etag });
+    assert.equal(
+      (await m.api('POST', `/v1/uploads/${id}/complete`, { json: { parts: etags.reverse() } })).json.error,
+      'bad_request',
+    );
     const missing = await m.api('POST', `/v1/uploads/${id}/complete`, { json: { parts: etags.reverse() } });
     assert.deepEqual(missing.json, { error: 'upload_incomplete', code: 1041 });
     assert.equal(missing.status, 422);
@@ -149,20 +185,32 @@ test('complete: wrong etag, parts body in proxied mode, no parts, repeat is safe
     for (const part of upload.part_urls) parts.push({ n: part.n, etag: (await putPart(upload, part)).etag });
     const bad = parts.map((p) => ({ ...p }));
     bad[1] = { n: 2, etag: '0'.repeat(32) };
-    assert.equal((await m.api('POST', `/v1/uploads/${id}/complete`, { json: { parts: bad } })).json.error, 'upload_incomplete');
+    assert.equal(
+      (await m.api('POST', `/v1/uploads/${id}/complete`, { json: { parts: bad } })).json.error,
+      'upload_incomplete',
+    );
 
     const second = await createJob(m.api, { key: 'second-key-000000000' });
     const up2 = second.json.upload;
     for (const part of up2.part_urls) await putPart(up2, part);
     const body = { parts: up2.part_urls.map((/** @type {{ n: number }} */ p) => ({ n: p.n, etag: 'x' })) };
-    assert.equal((await m.api('POST', `/v1/uploads/${second.json.job_id}/complete`, { json: body })).json.error, 'upload_incomplete');
+    assert.equal(
+      (await m.api('POST', `/v1/uploads/${second.json.job_id}/complete`, { json: body })).json.error,
+      'upload_incomplete',
+    );
 
     const third = await createJob(m.api, { key: 'third-key-0000000000' });
     const up3 = third.json.upload;
     const etags = [];
     for (const part of up3.part_urls) etags.push({ n: part.n, etag: (await putPart(up3, part)).etag });
     const ok = await m.api('POST', `/v1/uploads/${third.json.job_id}/complete`, { json: { parts: etags } });
-    assert.deepEqual(Object.keys(ok.json).sort(), ['balance_seconds', 'held_seconds', 'ok', 'state', 'verified_seconds']);
+    assert.deepEqual(Object.keys(ok.json).sort(), [
+      'balance_seconds',
+      'held_seconds',
+      'ok',
+      'state',
+      'verified_seconds',
+    ]);
     assert.equal(ok.json.state, 'queued');
     assert.equal(ok.json.verified_seconds, 21);
     const again = await m.api('POST', `/v1/uploads/${third.json.job_id}/complete`, { json: { parts: etags } });
@@ -180,8 +228,19 @@ test('proxied mode: upload is null, PUT parts need octet-stream, complete takes 
     assert.equal((await m.api('GET', `/v1/uploads/${id}/part-urls`)).json, null);
     const url = `/v1/uploads/${id}/parts/1`;
     assert.equal((await m.api('PUT', url, { body: new Uint8Array(10) })).json.error, 'bad_request');
-    assert.equal((await m.api('PUT', `/v1/uploads/${id}/parts/0`, { body: new Uint8Array(10), headers: { 'content-type': 'application/octet-stream' } })).json.error, 'bad_part_number');
-    const short = await m.api('PUT', url, { body: new Uint8Array(10), headers: { 'content-type': 'application/octet-stream' } });
+    assert.equal(
+      (
+        await m.api('PUT', `/v1/uploads/${id}/parts/0`, {
+          body: new Uint8Array(10),
+          headers: { 'content-type': 'application/octet-stream' },
+        })
+      ).json.error,
+      'bad_part_number',
+    );
+    const short = await m.api('PUT', url, {
+      body: new Uint8Array(10),
+      headers: { 'content-type': 'application/octet-stream' },
+    });
     assert.deepEqual(short.json, { ok: true, part: 1 });
     assert.equal((await m.api('POST', `/v1/uploads/${id}/complete`)).json.error, 'upload_incomplete');
 
@@ -215,7 +274,10 @@ test('upload config: loseParts drops a part silently, completeState and verified
     const { upload, job_id: id } = (await createJob(m.api)).json;
     const etags = [];
     for (const part of upload.part_urls) etags.push({ n: part.n, etag: (await putPart(upload, part)).etag });
-    assert.equal((await m.api('POST', `/v1/uploads/${id}/complete`, { json: { parts: etags } })).json.error, 'upload_incomplete');
+    assert.equal(
+      (await m.api('POST', `/v1/uploads/${id}/complete`, { json: { parts: etags } })).json.error,
+      'upload_incomplete',
+    );
 
     await select(m, { ...OPEN, completeState: 'done', upload: { verifiedSeconds: 25 } });
     const next = (await createJob(m.api)).json;
