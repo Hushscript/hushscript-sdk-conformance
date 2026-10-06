@@ -151,6 +151,16 @@ test('r2: signature, expiry, Authorization, Content-Length and size checks', asy
   });
 });
 
+test('r2: part URLs stay valid after a fractional clock advance', async () => {
+  await withMock(async (m) => {
+    await select(m, OPEN);
+    await m.api('POST', '/__clock', { json: { advance: 2.75 }, auth: false });
+    const { upload } = (await createJob(m.api)).json;
+    assert.match(upload.part_urls[0].url, /sig=\d+\./);
+    assert.equal((await putPart(upload, upload.part_urls[0])).res.status, 200);
+  });
+});
+
 test('complete: strict part check, etags, ordering, failure releases the hold', async () => {
   await withMock(async (m) => {
     await select(m, OPEN);
