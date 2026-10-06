@@ -13,13 +13,24 @@ media:
     docker compose run --rm media
 
 # render fixtures/exports from the app's own exporters (needs the app's node_modules)
+# Renders into a scratch dir and swaps it in only after the render succeeds.
 goldens:
-    rm -f fixtures/exports/*
-    docker run --rm --init --label sdk.test=1 --cap-drop ALL \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    tmp="$(mktemp -d -p fixtures .exports-new.XXXXXX)"
+    trap 'rm -rf "$tmp"' EXIT
+    chmod 755 "$tmp"
+    docker run --rm --init --label sdk.test=1 --cap-drop ALL --read-only \
       --security-opt no-new-privileges --network none \
       --user "$(id -u):$(id -g)" --pids-limit 512 --memory 4g \
       --tmpfs /tmp \
-      -v "$(realpath "{{app_dir}}")":/app -v "$(pwd)":/out \
+      -v "$(realpath "{{app_dir}}")":/app \
+      -v "$(pwd)/fixtures":/out/fixtures:ro \
+      -v "$(pwd)/$tmp":/out/fixtures/exports \
       -e SDK_GOLDENS_DIR=/out -e HOME=/tmp -w /app \
       {{node_image}} \
       timeout 600 npx vitest run --maxWorkers=4 src/lib/sdkGoldens.render.test.ts
+    test -n "$(ls -A "$tmp")" || { echo "render produced no files" >&2; exit 1; }
+    rm -rf fixtures/exports
+    mv "$tmp" fixtures/exports
+    trap - EXIT

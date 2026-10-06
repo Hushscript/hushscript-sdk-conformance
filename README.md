@@ -16,7 +16,7 @@ on the host except Docker and [just](https://github.com/casey/just).
 | `fixtures/exports/` | Golden `.srt`, `.vtt` and `.txt` output, one file per transcript and option set. |
 
 Golden names are `<transcript>.<variant>.<ext>`. The `translated` transcript
-also has `<transcript>.<variant>.es.<ext>` for its Spanish body. Variants:
+also has `<transcript>.<variant>.es.<ext>` for its Spanish body and `<transcript>.<variant>.cleaned.<ext>` for its cleaned body. Variants:
 
 | Variant | Options |
 |---|---|
@@ -39,6 +39,7 @@ just goldens    # re-render fixtures/exports from the app's own exporters
 Point `APP_DIR` at an app checkout that has `node_modules` installed
 (default `../../app`). The renderer is the source of truth: when the app's
 exporters change, regenerate and every SDK follows in its next release.
+Regeneration is deliberate. The ffmpeg apt pin in `docker/media.Dockerfile` must be bumped when bookworm ships a newer 5.1.x.
 
 Notes on the media set:
 
