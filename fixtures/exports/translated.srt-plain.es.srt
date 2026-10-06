@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:03,200
+Dana: Hola, gracias por llamar a la línea de soporte.
+
+2
+00:00:03,400 --> 00:00:07,800
+Speaker B: Hola, quería preguntar por mi última factura, parece incorrecta.
+
+3
+00:00:08,000 --> 00:00:12,500
+Dana: Por supuesto. ¿Puede decirme el número de factura y la fecha?
+
+4
+00:00:12,700 --> 00:00:28,900
+Speaker B: Claro, es la del primero de marzo, y creo que me cobraron dos veces el mismo paquete de minutos.

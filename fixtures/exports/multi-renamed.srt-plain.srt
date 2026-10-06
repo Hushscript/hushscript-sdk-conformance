@@ -1,0 +1,39 @@
+1
+00:00:00,000 --> 00:00:02,100
+Dana: Thanks for joining everyone.
+
+2
+00:00:02,100 --> 00:00:04,300
+Dana: I will start with a short recap.
+
+3
+00:00:04,500 --> 00:00:07,200
+Speaker B: Sounds good, go ahead.
+
+4
+00:00:07,400 --> 00:00:09,900
+Speaker C: Can you share the slides first?
+
+5
+00:00:09,900 --> 00:00:12,000
+Speaker C: I cannot see them yet.
+
+6
+00:00:12,000 --> 00:00:13,400
+Speaker C: Thanks.
+
+7
+00:00:13,600 --> 00:00:19,800
+Dana: Done. The numbers are up four percent, mostly from the new onboarding flow.
+
+8
+00:00:20,000 --> 00:00:24,500
+Speaker B: That matches what support is seeing, fewer tickets about the first upload.
+
+9
+00:00:24,700 --> 00:00:26,000
+Dana: Good to hear.
+
+10
+00:00:26,000 --> 00:00:38,000
+Dana: Next topic: the release schedule, which depends on the review of the new billing screens and on how quickly the translations come back.

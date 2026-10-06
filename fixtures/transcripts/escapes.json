@@ -1,0 +1,66 @@
+{
+  "id": "fx_escapes",
+  "title": "Markup and arrows",
+  "language_detected": "en",
+  "duration_seconds": 30,
+  "speaker_names": {
+    "B": "R&D <Lead>"
+  },
+  "tags": [],
+  "created_at": 1760000000,
+  "updated_at": 1760000000,
+  "auto_delete_at": null,
+  "edited": false,
+  "matter_code": null,
+  "client_code": null,
+  "body": {
+    "version": 1,
+    "original": {
+      "utterances": [
+        {
+          "speaker": "A",
+          "start_ms": 0,
+          "end_ms": 3000,
+          "text": "Tom & Jerry say 1 < 2 and 3 > 2."
+        },
+        {
+          "speaker": "A",
+          "start_ms": 3000,
+          "end_ms": 6000,
+          "text": "A cue arrow looks like 00:01 --> 00:02 in plain text."
+        },
+        {
+          "speaker": "B",
+          "start_ms": 6200,
+          "end_ms": 9500,
+          "text": "Longer dashes ---> and ----> must not survive in SRT."
+        },
+        {
+          "speaker": "B",
+          "start_ms": 9700,
+          "end_ms": 13000,
+          "text": "First paragraph.\n\nSecond paragraph after a blank line."
+        },
+        {
+          "speaker": "A",
+          "start_ms": 13200,
+          "end_ms": 17000,
+          "text": "Whitespace line next.\n   \nAnd the end.\r\nWindows break too."
+        },
+        {
+          "speaker": "A",
+          "start_ms": 17200,
+          "end_ms": 20000,
+          "text": "Already escaped &amp; &lt;b&gt; stays literal text."
+        },
+        {
+          "speaker": "B",
+          "start_ms": 20200,
+          "end_ms": 25000,
+          "text": "<b>bold</b> & <i>italic</i> --> done"
+        }
+      ]
+    },
+    "translations": {}
+  }
+}

@@ -1,0 +1,9 @@
+1
+00:00:00,000 --> 00:00:07,000
+This recording has no speaker labels at
+all, so the transcript is a single block
+
+2
+00:00:10,590 --> 00:00:17,590
+of text that still has to wrap into
+readable subtitle cues.

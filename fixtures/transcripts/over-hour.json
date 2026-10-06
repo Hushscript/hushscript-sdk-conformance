@@ -1,0 +1,54 @@
+{
+  "id": "fx_over_hour",
+  "title": "Over one hour",
+  "language_detected": "en",
+  "duration_seconds": 3800,
+  "speaker_names": {
+    "A": "Host"
+  },
+  "tags": [],
+  "created_at": 1760000000,
+  "updated_at": 1760000000,
+  "auto_delete_at": null,
+  "edited": false,
+  "matter_code": null,
+  "client_code": null,
+  "body": {
+    "version": 1,
+    "original": {
+      "utterances": [
+        {
+          "speaker": "A",
+          "start_ms": 3599000,
+          "end_ms": 3599999,
+          "text": "Just before the hour."
+        },
+        {
+          "speaker": "A",
+          "start_ms": 3600000,
+          "end_ms": 3604500,
+          "text": "Exactly on the hour."
+        },
+        {
+          "speaker": "B",
+          "start_ms": 3605250,
+          "end_ms": 3610125,
+          "text": "A little after, with a fractional second."
+        },
+        {
+          "speaker": "B",
+          "start_ms": 3661001,
+          "end_ms": 3664999,
+          "text": "One hour, one minute and one second."
+        },
+        {
+          "speaker": "A",
+          "start_ms": 3725999,
+          "end_ms": 3799000,
+          "text": "Over an hour in, a long closing remark that the speaker keeps going with for quite a while."
+        }
+      ]
+    },
+    "translations": {}
+  }
+}
