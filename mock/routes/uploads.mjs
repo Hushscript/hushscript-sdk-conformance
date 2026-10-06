@@ -42,7 +42,8 @@ function r2Error(status, code, message) {
  */
 function uploadPage(state, job, start, expired) {
   const total = job.totalParts ?? 0;
-  const exp = expired ? state.now - 1 : state.now + URL_LIFETIME_SECONDS;
+  const now = Math.floor(state.now);
+  const exp = expired ? now - 1 : now + URL_LIFETIME_SECONDS;
   const urls = [];
   for (let n = start; n < start + PAGE_SIZE && n <= total; n++) {
     urls.push({ n, url: `${state.origin}/__r2/${job.id}/${n}?sig=${exp}.${signature(job.id, n, exp)}` });
