@@ -4,7 +4,12 @@
   "call": { "op": "buy", "args": { "pack": "300min" } },
   "mock": { "purchase": [{ "error": "pat_purchase_requires_app" }] },
   "expect": {
-    "error": { "code": "pat_purchase_requires_app", "class": "PermissionDeniedError", "numericCode": 4021, "status": 403 },
+    "error": {
+      "code": "pat_purchase_requires_app",
+      "class": "PermissionDeniedError",
+      "numericCode": 4021,
+      "status": 403
+    },
     "requests": { "POST /v1/billing/purchase": 1 }
   }
 }
