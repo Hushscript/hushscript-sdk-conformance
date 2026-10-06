@@ -1,0 +1,10 @@
+{
+  "name": "claim-lost-response",
+  "description": "The socket is destroyed after the mock reads the claim body: OutcomeUnknownError and no retry.",
+  "call": { "op": "claim", "args": { "signupId": "sg_conformance", "claimSecret": "cs_conformance_secret" } },
+  "mock": { "claim": [{ "drop": "after-read" }] },
+  "expect": {
+    "error": { "class": "OutcomeUnknownError" },
+    "requests": { "POST /v1/agent/accounts/{signup_id}/claim": 1 }
+  }
+}

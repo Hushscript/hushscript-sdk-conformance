@@ -1,0 +1,16 @@
+{
+  "name": "redaction",
+  "description": "A 401 whose body echoes the bearer token. Nothing the SDK surfaces may contain the token.",
+  "call": { "op": "balance", "args": {} },
+  "mock": { "balance": [{ "status": 401, "error": "unauthorized", "echoToken": true }] },
+  "expect": {
+    "error": {
+      "code": "unauthorized",
+      "class": "AuthenticationError",
+      "numericCode": 2000,
+      "status": 401,
+      "messageExcludes": ["$TOKEN"]
+    },
+    "requests": { "GET /v1/account": 1 }
+  }
+}

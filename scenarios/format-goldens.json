@@ -1,0 +1,10 @@
+{
+  "name": "format-goldens",
+  "description": "Render every golden in fixtures/exports from its transcript fixture; all must be byte-identical. No requests.",
+  "call": { "op": "format", "args": {} },
+  "mock": {},
+  "expect": {
+    "result": { "checked": 72, "mismatches": [] },
+    "noRequests": true
+  }
+}

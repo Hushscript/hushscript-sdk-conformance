@@ -1,0 +1,11 @@
+{
+  "name": "part-urls-paging",
+  "description": "Forty parts, sixteen URLs per page: the SDK fetches the pages that start at 17 and 33.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "upload": { "parts": 40 } },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": { "GET /v1/uploads/{job}/part-urls": 2, "PUT /__r2/{job}/{n}": 40, "POST /v1/uploads": 1 },
+    "queries": { "GET /v1/uploads/{job}/part-urls": [{ "start": "17" }, { "start": "33" }] }
+  }
+}

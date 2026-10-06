@@ -1,0 +1,11 @@
+{
+  "name": "buy-no-card",
+  "description": "The account has no saved card: no purchase request is sent.",
+  "call": { "op": "buy", "args": { "pack": "300min" } },
+  "mock": { "cardList": { "default_id": null, "methods": [] } },
+  "expect": {
+    "error": { "code": "no_default_card", "class": "PaymentMethodRequiredError" },
+    "requests": { "POST /v1/billing/purchase": 0 },
+    "state": { "purchases": [] }
+  }
+}

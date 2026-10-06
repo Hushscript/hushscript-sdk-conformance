@@ -1,0 +1,16 @@
+{
+  "name": "happy-proxied",
+  "description": "The create response has upload: null, so parts go through the API and complete has no parts body.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "upload": null },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": {
+      "POST /v1/uploads": 1,
+      "PUT /__r2/{job}/{n}": 0,
+      "PUT /v1/uploads/{job}/parts/{n}": 1,
+      "POST /v1/uploads/{job}/complete": 1
+    },
+    "authorization": { "PUT /v1/uploads/{job}/parts/{n}": "present" }
+  }
+}

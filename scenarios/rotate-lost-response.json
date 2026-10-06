@@ -1,0 +1,10 @@
+{
+  "name": "rotate-lost-response",
+  "description": "The socket is destroyed after the mock reads the rotate request: OutcomeUnknownError and no retry.",
+  "call": { "op": "rotate", "args": {} },
+  "mock": { "rotate": [{ "drop": "after-read" }] },
+  "expect": {
+    "error": { "class": "OutcomeUnknownError" },
+    "requests": { "POST /v1/agent/credentials/rotate": 1 }
+  }
+}
