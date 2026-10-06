@@ -6,7 +6,7 @@
   "expect": {
     "error": {
       "code": "pat_scope_missing",
-      "class": "PermissionError",
+      "class": "PermissionDeniedError",
       "numericCode": 2023,
       "hintContains": "\"transcripts:read\" permission"
     },

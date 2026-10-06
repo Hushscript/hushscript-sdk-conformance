@@ -11,6 +11,7 @@ on the host except Docker and [just](https://github.com/casey/just).
 | Path | What |
 |---|---|
 | `hints.json` | Slug to English hint text, shared by every SDK at build time. |
+| `fixtures/hint-rendering.json` | Input to output cases for hint rendering (spec 9.3 rendering rules). See below. |
 | `fixtures/media/` | Synthetic sine-tone files (20 s and 61 s in every supported container and codec, plus a 10 s file, a WebM renamed to `.mp3` and a truncated FLAC). `durations.json` holds the true durations. |
 | `fixtures/transcripts/` | Synthetic transcript bodies in the `GET /v1/transcripts/{id}` shape. No real content. |
 | `fixtures/exports/` | Golden `.srt`, `.vtt` and `.txt` output, one file per transcript and option set. |
@@ -30,6 +31,29 @@ also has `<transcript>.<variant>.es.<ext>` for its Spanish body and `<transcript
 | `txt-nospeakers` | speakers off |
 | `txt-timestamps` | `[M:SS]` or `[H:MM:SS]` prefixes |
 | `txt-nomerge` | one block per utterance |
+
+## Hint rendering fixture
+
+`fixtures/hint-rendering.json` is an array of cases, one per hint the SDKs must render the same way:
+
+```json
+{ "slug": "insufficient_balance", "details": { "needed_seconds": 1250, "balance_seconds": 600 }, "expected": "Not enough minutes: 21 needed, 10 available. ..." }
+```
+
+| Field | Meaning |
+|---|---|
+| `slug` | Key into `hints.json`. A slug missing from `hints.json` renders `null`. |
+| `scope` | Optional. The scope the operation needs, for `{scope}`. |
+| `details` | The raw values the SDK has in hand, with these snake_case keys and units, whatever the SDK's own naming: `needed_seconds`, `balance_seconds`, `used_seconds`, `max_seconds`, `retry_after_seconds` (whole seconds), `allowed_packs` (array of strings), `current_version`. Every key is optional. |
+| `expected` | The rendered hint, or `null`. |
+
+Rendering rules (spec 9.3), which every case pins:
+
+- Split the hint after each `". "`; each sentence keeps its own period. Drop every sentence with a placeholder that has no value. Join what is left with a single space. Nothing left means `null`.
+- `{needed}` is `needed_seconds` in minutes rounded up. `{balance}`, `{used}` and `{max}` are `balance_seconds`, `used_seconds` and `max_seconds` in minutes rounded down.
+- `{allowedPacks}` joins `allowed_packs` with `", "`. `{retryAfter}` is `retry_after_seconds`. `{currentVersion}` is `current_version`.
+
+A fractional `retry_after_seconds` and an empty `allowed_packs` are not covered; no SDK may rely on them.
 
 ## Using this suite from an SDK
 
