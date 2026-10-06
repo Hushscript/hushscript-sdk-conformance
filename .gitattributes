@@ -1,0 +1,4 @@
+# Goldens and fixtures are compared byte for byte (some hold CRLF and no
+# trailing newline), so git must never normalize them.
+fixtures/** -text
+fixtures/media/* binary

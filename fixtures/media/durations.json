@@ -1,0 +1,22 @@
+{
+  "aac-20s.m4a": 20.000,
+  "aac-61s.m4a": 61.000,
+  "cbr-20s.mp3": 20.088,
+  "cbr-61s.mp3": 61.092,
+  "flac-20s.flac": 20.000,
+  "flac-61s.flac": 61.000,
+  "opus-20s.opus": 20.007,
+  "opus-61s.opus": 61.006,
+  "pcm-20s.wav": 20.000,
+  "pcm-61s.wav": 61.000,
+  "short-10s.mp3": 10.080,
+  "vbr-noxing-20s.mp3": 20.080,
+  "vbr-noxing-61s.mp3": 61.090,
+  "vbr-xing-20s.mp3": 20.088,
+  "vbr-xing-61s.mp3": 61.092,
+  "video-20s.mp4": 20.000,
+  "video-61s.mp4": 61.000,
+  "vorbis-20s.ogg": 20.000,
+  "vorbis-61s.ogg": 61.000,
+  "webm-renamed.mp3": 20.008
+}

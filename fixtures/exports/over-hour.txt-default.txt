@@ -1,0 +1,5 @@
+Host: Just before the hour. Exactly on the hour.
+
+Speaker B: A little after, with a fractional second. One hour, one minute and one second.
+
+Host: Over an hour in, a long closing remark that the speaker keeps going with for quite a while.

@@ -1,0 +1,12 @@
+Tom & Jerry say 1 < 2 and 3 > 2. A cue arrow looks like 00:01 --> 00:02 in plain text.
+
+Longer dashes ---> and ----> must not survive in SRT. First paragraph.
+
+Second paragraph after a blank line.
+
+Whitespace line next.
+   
+And the end.
+Windows break too. Already escaped &amp; &lt;b&gt; stays literal text.
+
+<b>bold</b> & <i>italic</i> --> done

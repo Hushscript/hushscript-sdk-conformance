@@ -1,0 +1,23 @@
+services:
+  media:
+    build:
+      context: .
+      dockerfile: docker/media.Dockerfile
+    image: hushscript-sdk-conformance-media:local
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 4g
+    pids_limit: 512
+    network_mode: none
+    labels:
+      sdk.test: "1"
+    working_dir: /work
+    volumes:
+      - ./fixtures:/work/fixtures
+    command: ["timeout", "300", "bash", "fixtures/make-media.sh"]
