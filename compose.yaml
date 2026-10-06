@@ -21,3 +21,26 @@ services:
     volumes:
       - ./fixtures:/work/fixtures
     command: ["timeout", "300", "bash", "fixtures/make-media.sh"]
+
+  mock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hushscript-sdk-conformance-mock:local
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 128
+    labels:
+      sdk.test: "1"
+    networks:
+      - sdk
+
+networks:
+  sdk:
+    internal: true

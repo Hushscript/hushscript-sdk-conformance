@@ -1,0 +1,11 @@
+{
+  "name": "complete-returns-done",
+  "description": "complete already reports done: no polling loop. One job GET reads the transcript id, then the transcript is fetched.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "completeState": "done" },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": { "GET /v1/transcripts/{id}": 1, "POST /v1/uploads/{job}/complete": 1 },
+    "requestsAtMost": { "GET /v1/jobs/{id}": 1 }
+  }
+}

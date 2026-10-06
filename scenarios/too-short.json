@@ -1,0 +1,10 @@
+{
+  "name": "too-short",
+  "description": "A 10 s file is below the 15 s minimum.",
+  "call": { "op": "transcribe", "args": { "file": "media/short-10s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 } },
+  "expect": {
+    "error": { "code": "duration_out_of_range", "class": "FileLimitError" },
+    "noRequests": true
+  }
+}

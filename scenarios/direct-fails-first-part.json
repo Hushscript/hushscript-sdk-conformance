@@ -1,0 +1,11 @@
+{
+  "name": "direct-fails-first-part",
+  "description": "Every direct PUT fails and none has succeeded, so the SDK falls back to proxied PUTs for all three parts.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "r2": [{ "status": 500, "times": "always" }] },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": { "PUT /v1/uploads/{job}/parts/{n}": 3, "POST /v1/uploads/{job}/complete": 1 },
+    "requestsAtLeast": { "PUT /__r2/{job}/{n}": 1 }
+  }
+}

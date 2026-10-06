@@ -1,0 +1,10 @@
+{
+  "name": "direct-fails-after-success",
+  "description": "Eight parts; two direct PUTs fail after the first success. The SDK keeps retrying direct and never goes proxied.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "upload": { "parts": 8 }, "r2": [{ "afterDirectSuccess": true, "status": 503, "times": 2 }] },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": { "PUT /__r2/{job}/{n}": 10, "PUT /v1/uploads/{job}/parts/{n}": 0, "POST /v1/uploads/{job}/complete": 1 }
+  }
+}

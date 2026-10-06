@@ -1,0 +1,19 @@
+{
+  "name": "job-failed",
+  "description": "Processing ends in failed with failure_kind media_undecodable.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": {
+    "account": { "balance_seconds": 36000 },
+    "jobFlow": [
+      { "state": "processing", "polls": 1 },
+      { "state": "failed", "error": "Could not decode the audio", "failure_kind": "media_undecodable" }
+    ]
+  },
+  "expect": {
+    "error": {
+      "class": "JobFailedError",
+      "fields": { "failureKind": "media_undecodable", "error": "Could not decode the audio", "jobId": "job_conf_0001" }
+    },
+    "requests": { "GET /v1/transcripts/{id}": 0 }
+  }
+}

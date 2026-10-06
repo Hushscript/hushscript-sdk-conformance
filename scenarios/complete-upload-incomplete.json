@@ -1,0 +1,11 @@
+{
+  "name": "complete-upload-incomplete",
+  "description": "The mock acknowledges part 2 but loses it; complete answers upload_incomplete (1041) and the job fails with its hold released.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "upload": { "loseParts": [2] } },
+  "expect": {
+    "error": { "code": "upload_incomplete", "class": "UploadError", "numericCode": 1041, "status": 422 },
+    "requests": { "POST /v1/uploads/{job}/complete": 1 },
+    "state": { "jobs": 1, "holds": 0 }
+  }
+}

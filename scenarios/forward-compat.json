@@ -1,0 +1,13 @@
+{
+  "name": "forward-compat",
+  "description": "Every response carries unknown fields and the job passes through an unknown state; the transcript keeps the unknown field in its raw body.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": {
+    "account": { "balance_seconds": 36000 },
+    "forwardCompat": true,
+    "jobFlow": [{ "state": "reviewing", "polls": 1 }, { "state": "processing", "polls": 1 }, { "state": "done" }]
+  },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6, "raw": { "x_unknown_field": { "nested": true, "list": [1, 2, 3] } } }
+  }
+}
