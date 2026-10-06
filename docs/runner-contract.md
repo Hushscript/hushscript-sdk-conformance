@@ -50,8 +50,8 @@ All control endpoints are unauthenticated and are not written to the log.
 | `POST /__scenario {"name": "x"}` | Loads `scenarios/x.json`: fresh state, empty log, clock at 0. `{"mock": {...}, "expect": {...}}` loads an ad-hoc scenario (used by the mock's own tests). |
 | `POST /__reset` | Back to the empty default scenario. |
 | `POST /__mark` | Marks "now" in the log. `noRequests` counts requests after the last mark. Call it right before the final `call`. |
-| `GET /__log` | Every API request: `[{method, path, query, bodySha256, headers, route, t, idempotencyKey}]`. `headers.authorization` is `present` or `absent`, never the value. `route` is the OpenAPI path template (`PUT /__r2/{job}/{n}`); `t` is the mock clock in seconds at arrival. |
-| `GET /__state` | Counts and lists the mock tracks: `jobs`, `holds`, `jobList`, `purchases`, `claims`, `rotations`, `balanceSeconds`, `heldSeconds`, `now`. |
+| `GET /__log` | Every API request: `[{method, path, query, bodySha256, headers, route, t, idempotencyKey}]`. `headers.authorization` is `present` or `absent`, never the value. `route` is the OpenAPI path template (`PUT /__r2/{job}/{n}`); `t` is the mock clock in seconds at arrival; `status` is the HTTP status the mock answered with (`null` for a dropped connection, and while a request is still held). |
+| `GET /__state` | Counts and lists the mock tracks: `jobs`, `holds` (jobs holding minutes), `pendingHolds` (requests the mock is holding until the clock moves), `nextHoldAt` (the earliest mock time a held request is released, or `null`), `jobList`, `purchases`, `claims`, `rotations`, `balanceSeconds`, `heldSeconds`, `now`. |
 | `GET /__verify` | `{"ok": bool, "failures": [string]}`: the request-side half of the scenario's `expect`. |
 | `GET /__clock`, `POST /__clock {"advance": seconds}` | Reads or moves the mock clock. Returns `{"now": seconds}`. |
 
@@ -74,10 +74,22 @@ A runner must not skip a scenario it cannot run. It fails it.
 The mock never reads the wall clock. Time moves only through `POST /__clock`. Each SDK exposes an injectable `now()` and `sleep()`, and the runner supplies a virtual clock so nothing waits in real time:
 
 - `sleep(s)` registers a timer at `virtualNow + s` and returns a promise.
-- While the call is pending, a driver loop advances the virtual clock to the earliest pending timer, tells the mock (`POST /__clock {"advance": delta}`) and fires that timer. When no timer is pending it yields to I/O. If the call is still pending after a short real-time wait and `GET /__state` shows nothing in flight, it advances 30 s.
 - The mock's clock and the SDK's virtual clock are the same number: both start at 0 and only the driver moves them.
 
-`heartbeat-cadence` depends on this. The mock holds each R2 part response for 300 mock seconds (`holdSeconds`), so the SDK's heartbeat timer must fire while parts are in flight. `GET /__verify` then checks that create, every heartbeat and complete are at most 120 s apart in `t`.
+#### The driver
+
+While the final `call` is pending, the driver loops. It runs in the same process as the SDK and wraps the SDK's HTTP transport (the injected `fetch`) to count requests in flight, `inFlight`. A held request is in flight from the SDK's point of view but waiting for the clock, not for work, so the driver subtracts the mock's `pendingHolds`:
+
+1. Yield to the event loop until the SDK is quiet: two consecutive `setImmediate` turns in which `inFlight - pendingHolds` (with `pendingHolds` read from `GET /__state`) stayed 0 and the SDK registered no new timer. That is "the SDK is idle": nothing is being computed or answered, everything left waits for time.
+2. Pick the target: the earliest of the SDK's pending virtual timers and `nextHoldAt` from `/__state`. Targets at or before the current time fire without moving the clock.
+3. `POST /__clock {"advance": target - now}`, set the SDK's virtual clock to the same value, fire the due timers, go back to 1.
+4. If there is no timer and no held request, and the call is still pending after the quiet check, the driver fails the scenario ("SDK stalled") instead of advancing blindly. A call that waits on nothing is a bug in the SDK or the driver, and a blind jump would hide it.
+
+Without the subtraction a driver can never tell "the SDK is waiting for a response the mock will send" (do not advance, the response is coming in real time) from "the SDK is waiting for a response the mock is holding for the clock" (advance). `pendingHolds` is that signal.
+
+`heartbeat-cadence` depends on this. The mock holds each R2 part response for 300 mock seconds (`holdSeconds`), so the SDK's heartbeat timer must fire while parts are in flight. `GET /__verify` then checks that create, every heartbeat and complete are at most 120 s apart in `t`. `minCount: 4` assumes the default concurrency of 4: eight parts in two waves of 300 s make 600 s from create to complete, so at least four heartbeats (at 120, 240, 360 and 480 s). A runner that raises the concurrency changes the arithmetic and fails the scenario for the wrong reason; leave `concurrency` at its default for this scenario.
+
+Pacing and backoff are checked from the same clock. `minGapSeconds` (below) compares the `t` of consecutive requests to a route, so an SDK that retried at once, or that did not wait the spec's 15 s (`rate_limited` with no `Retry-After`) or 30 s (`too_many_active_jobs`), fails. `retry-after-61` checks the opposite: it expects `state.now` to be `0` at the end, so an SDK that slept before raising `RateLimitError` (the driver would have advanced the clock for that sleep) fails.
 
 `wait-timeout-then-resume` and `resume-different-file` rely on the job staying in `processing` until the mock clock reaches a value, so the SDK's polling sleeps must advance the mock clock too.
 
@@ -102,7 +114,7 @@ The mock never reads the wall clock. Time moves only through `POST /__clock`. Ea
 | `op` | `args` | The runner calls | `result` is |
 |---|---|---|---|
 | `transcribe` | `file` (path under `fixtures/`), `options` (TranscribeOptions, camelCase) | `hs.transcribe(file, options)` | `{id, title, language, durationSeconds, utteranceCount, text, raw}`; `text` is `toText()`, `raw` is `toJSON()` |
-| `resume` | `file` | `hs.resume(token, {file})` with the token from `prior`'s error | same as `transcribe` |
+| `resume` | `file` | `hs.resume(token, file)` with the token from `prior`'s error | same as `transcribe` |
 | `balance` | none | `hs.balance()` | `{seconds, minutes, heldSeconds, expiresAt}` |
 | `listTranscripts` | `pageSize?` | `hs.transcripts.list()` drained | `{count, firstId, lastId}` |
 | `getTranscript` | `id` | `hs.transcripts.get(id)` | as `transcribe` |
@@ -112,13 +124,13 @@ The mock never reads the wall clock. Time moves only through `POST /__clock`. Ea
 | `probe` | `toleranceSeconds` | the SDK's duration probe on every key of `fixtures/media/durations.json` | `{checked, failures}`; a failure is `{file, expected, got}` |
 | `format` | none | every transcript fixture through `toSRT`/`toVTT`/`toText` for every golden in `fixtures/exports/`; names follow the README | `{checked, mismatches}`; a mismatch is the golden's file name |
 
-The `transcribe` file is read from disk by the SDK, so a runner that works from the mock's `/__files` downloads it first. `resume` is given a file because the SDK refuses one whose size differs from the token's (spec 7.3); the spec's `hs.resume(token, options)` signature has no file argument, so the runner passes it however the SDK models that (an option, or a file-bound resume).
+The `transcribe` file is read from disk by the SDK, so a runner that works from the mock's `/__files` downloads it first. `resume` takes the file as its second argument (spec 6.1, 9.2). The SDK refuses a file whose size differs from the token's with `ResumeMismatchError` (`resume_file_mismatch`, no request sent). The file is needed only while the job is still `uploading`; a resume past that works without one, and a resume that needs a file and gets none raises `ResumeMismatchError` with code `resume_file_required`. No scenario exercises the second case yet, so the runner's own tests cover it; the hint text is in `hints.json`.
 
 `call.prior` is a call of the same shape with `expectError` (an error expectation as in section 7). Its requests count toward `requests`, but `noRequests` covers the final call only.
 
 ### `mock`: what the mock does
 
-Arrays are scripted steps for one route, consumed in order; unknown keys fail the scenario load. A step is a rule:
+Arrays are scripted steps for one route, consumed in order; unknown keys at any level (mock, rule, `match`) fail the scenario load. A request without valid credentials gets `unauthorized` before the steps are consulted, so it does not consume one. A step is a rule:
 
 | Field | Meaning |
 |---|---|
@@ -130,7 +142,7 @@ Arrays are scripted steps for one route, consumed in order; unknown keys fail th
 | `drop` | `after-read`: destroy the socket after reading the request, change nothing. `after-commit`: run the handler, then destroy the socket. |
 | `holdSeconds` | Hold the request until the mock clock has advanced this far. |
 | `times` | How many requests the rule applies to: a number (default 1) or `"always"`. |
-| `match` | `{n: 2}` applies only to part 2; `{afterDirectSuccess: true}` only once a direct PUT has succeeded. |
+| `match` | `{n: 2}` applies only to part 2; `{afterDirectSuccess: true}` only once a direct PUT has succeeded. Both can be combined. |
 
 Route keys: `create`, `partUrls`, `r2` (direct part PUTs), `part` (proxied part PUTs), `heartbeat`, `complete`, `job`, `jobs`, `transcript`, `transcripts`, `deleted`, `balance` (`GET /v1/account`), `packs`, `cards`, `defaultCard`, `purchase`, `setupSession`, `signup`, `claim`, `rotate`.
 
@@ -169,6 +181,7 @@ Evaluated by the mock in `GET /__verify` (request counts are over the whole scen
 | `queries` | Route to the ordered query strings of its requests; `"*"` matches any non-empty value. |
 | `state` | Subset match against `/__state`. |
 | `heartbeat` | `{maxGapSeconds, minCount}` over create, heartbeats and complete. |
+| `minGapSeconds` | Route to the least mock seconds between consecutive requests to it (by `t`). Needs at least two requests. |
 
 ## 7. Reporting
 

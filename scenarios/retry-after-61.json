@@ -1,10 +1,11 @@
 {
   "name": "retry-after-61",
-  "description": "429 with Retry-After: 61 exceeds the 60 s ceiling: raise at once without waiting or retrying.",
+  "description": "429 with Retry-After: 61 exceeds the 60 s ceiling: raise at once without waiting or retrying; the mock clock stays at 0.",
   "call": { "op": "balance", "args": {} },
   "mock": { "balance": [{ "status": 429, "error": "rate_limited", "headers": { "Retry-After": "61" } }] },
   "expect": {
     "error": { "code": "rate_limited", "class": "RateLimitError", "retryAfter": 61, "status": 429 },
-    "requests": { "GET /v1/account": 1 }
+    "requests": { "GET /v1/account": 1 },
+    "state": { "now": 0 }
   }
 }

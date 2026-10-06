@@ -40,6 +40,7 @@ test('control: the log reduces Authorization and is not written for control call
       'path',
       'query',
       'route',
+      'status',
       't',
     ]);
   });
@@ -86,11 +87,18 @@ test('clock: a held response is released once the clock reaches it', async () =>
       return reply;
     });
     await new Promise((r) => setTimeout(r, 100));
+    const held = (await api('GET', '/__state', { auth: false })).json;
+    assert.equal(held.pendingHolds, 1);
+    assert.equal(held.nextHoldAt, 100);
     await advance(99);
     await new Promise((r) => setTimeout(r, 100));
     assert.equal(done, false);
+    assert.equal((await api('GET', '/__state', { auth: false })).json.pendingHolds, 1);
     await advance(1);
     assert.equal((await pending).status, 200);
+    const idle = (await api('GET', '/__state', { auth: false })).json;
+    assert.equal(idle.pendingHolds, 0);
+    assert.equal(idle.nextHoldAt, null);
     assert.ok(base.startsWith('http://127.0.0.1:'));
   });
 });
@@ -107,4 +115,21 @@ test('cli: --port 0 prints READY with the bound port', async () => {
     child.kill('SIGTERM');
     await once(child, 'exit');
   }
+});
+
+test('control: the log records the response status; a dropped request has none', async () => {
+  await withMock(async ({ api }) => {
+    await api('POST', '/__scenario', {
+      json: { mock: { balance: [{ status: 503 }], rotate: [{ drop: 'after-read' }] } },
+      auth: false,
+    });
+    await api('GET', '/v1/account');
+    await api('GET', '/v1/account');
+    await assert.rejects(api('POST', '/v1/agent/credentials/rotate'));
+    const log = (await api('GET', '/__log', { auth: false })).json;
+    assert.deepEqual(
+      log.map((/** @type {{ status: number | null }} */ e) => e.status),
+      [503, 200, null],
+    );
+  });
 });

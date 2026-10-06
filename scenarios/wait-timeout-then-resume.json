@@ -1,6 +1,6 @@
 {
   "name": "wait-timeout-then-resume",
-  "description": "The job stays in processing until mock clock 200. The first call times out after 60 s with a resume token; resume() then finishes.",
+  "description": "The job stays in processing until mock clock 200. The first call times out after 60 s with a resume token; resume() replays the create with the same key (two creates, one job) and finishes.",
   "call": {
     "op": "resume",
     "args": { "file": "media/cbr-20s.mp3" },
@@ -16,6 +16,8 @@
   },
   "expect": {
     "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": { "POST /v1/uploads": 2 },
+    "sameIdempotencyKey": "POST /v1/uploads",
     "state": { "jobs": 1, "holds": 0 }
   }
 }

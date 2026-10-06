@@ -108,6 +108,7 @@ export interface LogEntry {
   route: string;
   t: number;
   idempotencyKey: string | null;
+  status: number | null;
 }
 
 export interface Purchase {
@@ -138,6 +139,7 @@ export interface Expect {
   queries?: Record<string, Record<string, string>[]>;
   state?: Record<string, unknown>;
   heartbeat?: { maxGapSeconds: number; minCount: number };
+  minGapSeconds?: Record<string, number>;
 }
 
 export interface State {

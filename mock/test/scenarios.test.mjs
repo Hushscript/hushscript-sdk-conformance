@@ -64,6 +64,7 @@ const EXPECT_KEYS = [
   'queries',
   'state',
   'heartbeat',
+  'minGapSeconds',
 ];
 
 /** @param {string} name @returns {any} */
@@ -111,4 +112,32 @@ test('scenarios: error codes named in scenarios exist in the catalog', async () 
         if (rule.error !== undefined) assert.ok(ERROR_CATALOG[rule.error], `${name}: ${rule.error}`);
     }
   }
+});
+
+test('scenarios: every SDK-side error slug has a hint', async () => {
+  const { ERROR_CATALOG } = await import('../errors.mjs');
+  const hints = JSON.parse(readFileSync(new URL('hints.json', ROOT), 'utf8'));
+  const slugs = new Set();
+  for (const name of REQUIRED) {
+    const s = scenario(name);
+    for (const call of [s.call, s.call.prior]) {
+      const error = call?.expectError ?? (call === s.call ? s.expect.error : undefined);
+      if (typeof error?.code === 'string' && !ERROR_CATALOG[error.code]) slugs.add(error.code);
+    }
+  }
+  assert.ok(slugs.has('resume_file_mismatch'));
+  for (const slug of slugs) assert.ok(hints[slug] !== undefined, `hints.json has no ${slug}`);
+});
+
+test('scenarios: the spec hint texts for the resume errors are exact', () => {
+  const hints = JSON.parse(readFileSync(new URL('hints.json', ROOT), 'utf8'));
+  assert.equal(
+    hints.resume_file_mismatch,
+    'This is not the file the upload started with. Pass the original file, or start a new transcription.',
+  );
+  assert.equal(hints.resume_file_required, 'The upload was not finished. Pass the original file to resume it.');
+});
+
+test('scenarios: unknown rule keys in any scenario fail the load', () => {
+  assert.throws(() => loadMock({ r2: [{ afterDirectSuccess: true, status: 503 }] }), /unknown rule key/);
 });

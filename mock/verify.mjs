@@ -16,6 +16,8 @@ export function stateSummary(state) {
     scenario: state.scenario,
     jobs: jobs.length,
     holds: jobs.filter((job) => job.holdActive).length,
+    pendingHolds: state.waiters.length,
+    nextHoldAt: state.waiters.length === 0 ? null : Math.min(...state.waiters.map((waiter) => waiter.at)),
     jobList: jobs.map((job) => ({
       id: job.id,
       state: job.state,
@@ -116,6 +118,15 @@ export function verify(state) {
   }
   if (expect.state !== undefined && !subsetMatch(expect.state, JSON.parse(JSON.stringify(stateSummary(state))))) {
     failures.push(`state mismatch: wanted ${JSON.stringify(expect.state)}, got ${JSON.stringify(stateSummary(state))}`);
+  }
+  for (const [route, want] of Object.entries(expect.minGapSeconds ?? {})) {
+    const times = forRoute(log, route).map((entry) => entry.t);
+    if (times.length < 2) failures.push(`${route}: minGapSeconds needs at least 2 requests, got ${times.length}`);
+    for (let i = 1; i < times.length; i++) {
+      const gap = (times[i] ?? 0) - (times[i - 1] ?? 0);
+      if (gap < want)
+        failures.push(`${route}: request ${i + 1} came ${gap} s after the previous, wanted at least ${want} s`);
+    }
   }
   if (expect.heartbeat !== undefined) {
     const beats = forRoute(log, HEARTBEAT).map((entry) => entry.t);

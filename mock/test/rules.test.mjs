@@ -144,3 +144,30 @@ test('routes: unknown paths and methods answer with API-shaped errors and are lo
     assert.equal(log[0].route, 'GET (unmatched)');
   });
 });
+
+test('rules: unknown rule keys, unknown match keys and non-object steps fail the load', async () => {
+  await withMock(async ({ api }) => {
+    for (const [mock, text] of /** @type {[unknown, string][]} */ ([
+      [{ r2: [{ afterDirectSuccess: true, status: 503 }] }, 'unknown rule key'],
+      [{ r2: [{ match: { part: 2 }, status: 503 }] }, 'unknown match key'],
+      [{ r2: [{ match: 'n=2', status: 503 }] }, 'match must be an object'],
+      [{ r2: ['503'] }, 'must be an object'],
+    ])) {
+      const res = await api('POST', '/__scenario', { json: { mock }, auth: false });
+      assert.equal(res.status, 400);
+      assert.ok(res.text.includes(text), `${text}: ${res.text}`);
+    }
+  });
+});
+
+test('auth: an unauthenticated request does not consume a scripted step', async () => {
+  await withRules(
+    async ({ api }) => {
+      assert.equal((await api('GET', '/v1/account', { auth: false })).status, 401);
+      assert.equal((await api('GET', '/v1/account', { auth: false })).status, 401);
+      assert.equal((await api('GET', '/v1/account')).status, 503);
+      assert.equal((await api('GET', '/v1/account')).status, 200);
+    },
+    { balance: [{ status: 503 }] },
+  );
+});
