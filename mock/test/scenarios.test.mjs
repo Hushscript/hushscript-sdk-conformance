@@ -13,6 +13,8 @@ const REQUIRED = [
   'direct-fails-after-success',
   'r2-403-expired-url',
   'part-urls-paging',
+  'create-null-part-urls',
+  'page-null-part-urls',
   'create-429-no-retry-after',
   'create-network-drop-after-commit',
   'too-many-active-jobs',

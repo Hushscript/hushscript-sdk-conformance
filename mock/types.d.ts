@@ -52,6 +52,7 @@ export interface UploadConfig {
   expireFirstPage?: boolean;
   loseParts?: number[];
   verifiedSeconds?: number;
+  nullPartUrls?: 'create' | 'page';
 }
 
 export interface MockConfig {

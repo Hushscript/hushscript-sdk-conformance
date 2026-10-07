@@ -1,9 +1,9 @@
 {
   "name": "insufficient-balance-server",
-  "description": "Preflight passes but create answers 402 with the balance details.",
+  "description": "No client-side balance check: the account balance is below the file's estimate, create still goes out and answers 402 with the balance details.",
   "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
   "mock": {
-    "account": { "balance_seconds": 36000 },
+    "account": { "balance_seconds": 10 },
     "create": [
       { "error": "insufficient_balance", "extra": { "needed_seconds": 21, "balance_seconds": 10, "held_seconds": 0 } }
     ]

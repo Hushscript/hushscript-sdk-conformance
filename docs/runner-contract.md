@@ -151,7 +151,7 @@ Configuration keys:
 | Key | Meaning |
 |---|---|
 | `account` | `balance_seconds` (default 0), `held_seconds`, `max_daily_seconds`, `max_active_jobs`, `active_jobs`, `used_today_seconds`, `card_on_file`, `data_region`, `credits_expire_at`, `agent` (adds `purchases_remaining_in_window`, marks packs `available`) |
-| `upload` | `null`: the create response has `upload: null` (proxied mode). Otherwise `{parts: 3, expireFirstPage, loseParts: [n], verifiedSeconds}`. The mock derives `part_size_bytes` from `size_bytes` so the file splits into exactly `parts` parts, and `part-urls` pages hold 16 URLs. `expireFirstPage` mints the create response's URLs already expired. `loseParts` acknowledges a part and forgets it. |
+| `upload` | `null`: the create response has `upload: null` (proxied mode). Otherwise `{parts: 3, expireFirstPage, loseParts: [n], verifiedSeconds}`. The mock derives `part_size_bytes` from `size_bytes` so the file splits into exactly `parts` parts, and `part-urls` pages hold 16 URLs. `expireFirstPage` mints the create response's URLs already expired. `loseParts` acknowledges a part and forgets it. `nullPartUrls: "create"` answers the create with an upload object whose `part_urls` and `next_part_number` are null; `"page"` answers every `part-urls` page that way. |
 | `cardList` | `{default_id, methods}` replaces the two default cards (`pm_conf_default` is the default). |
 | `fixture` | Transcript fixture served for finished jobs (default `one-speaker`). |
 | `listing` | `{count}`: `GET /v1/transcripts` pages over this many synthetic rows. Cursors are opaque and signed; anything else is `bad_request`. |
