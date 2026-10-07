@@ -95,7 +95,15 @@ for (const name of REQUIRED) {
 
 test('scenarios: fixture-derived counts match the repository', () => {
   const durations = JSON.parse(readFileSync(new URL('fixtures/media/durations.json', ROOT), 'utf8'));
-  assert.equal(scenario('probe-durations').expect.result.checked, Object.keys(durations).length);
+  const probe = scenario('probe-durations');
+  /** @type {string[]} */
+  const refuse = probe.call.args.refuse;
+  assert.ok(
+    refuse.every((file) => file in durations),
+    'every refused file is a durations.json key',
+  );
+  assert.equal(probe.expect.result.refused, refuse.length);
+  assert.equal(probe.expect.result.checked, Object.keys(durations).length - refuse.length);
   const goldens = readdirSync(new URL('fixtures/exports/', ROOT)).length;
   assert.equal(scenario('format-goldens').expect.result.checked, goldens);
   const fixture = JSON.parse(readFileSync(new URL('fixtures/transcripts/one-speaker.json', ROOT), 'utf8'));

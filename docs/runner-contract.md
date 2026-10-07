@@ -121,7 +121,7 @@ Pacing and backoff are checked from the same clock. `minGapSeconds` (below) comp
 | `buy` | `pack` | `hs.buy(pack)` | as `balance` |
 | `claim` | `signupId`, `claimSecret` | `Hushscript.agent.claim(...)` | `{token, userId, scopes, seconds}` |
 | `rotate` | none | `hs.agent.rotateToken()` | `{token, tokenId, scopes}` |
-| `probe` | `toleranceSeconds` | the SDK's duration probe on every key of `fixtures/media/durations.json` | `{checked, failures}`; a failure is `{file, expected, got}` |
+| `probe` | `toleranceSeconds`, `refuse` | the SDK's sniffer and duration probe on every key of `fixtures/media/durations.json`: a key in `refuse` must be refused by the sniffer (counts in `refused`, a probe result there is a failure); every other key must probe within the tolerance (counts in `checked`) | `{checked, refused, failures}`; a failure is `{file, expected, got}` |
 | `format` | none | every transcript fixture through `toSRT`/`toVTT`/`toText` for every golden in `fixtures/exports/`; names follow the README | `{checked, mismatches}`; a mismatch is the golden's file name |
 
 The `transcribe` file is read from disk by the SDK, so a runner that works from the mock's `/__files` downloads it first. `resume` takes the file as its second argument (spec 6.1, 9.2). The SDK refuses a file whose size differs from the token's with `ResumeMismatchError` (`resume_file_mismatch`, no request sent). The file is needed only while the job is still `uploading`; a resume past that works without one, and a resume that needs a file and gets none raises `ResumeMismatchError` with code `resume_file_required`. No scenario exercises the second case yet, so the runner's own tests cover it; the hint text is in `hints.json`.
