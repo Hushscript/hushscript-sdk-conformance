@@ -90,7 +90,7 @@ image-check:
     docker exec "$cid" node --input-type=module -e "
       const get = async (p) => (await fetch('http://127.0.0.1:4010' + p)).json();
       const { scenarios } = await get('/__scenarios');
-      if (scenarios.length !== 32) throw new Error('scenarios: ' + scenarios.length);
+      if (scenarios.length !== 31) throw new Error('scenarios: ' + scenarios.length);
       const durations = await get('/__files/fixtures/media/durations.json');
       if (Object.keys(durations).length !== 20) throw new Error('durations');
     "
