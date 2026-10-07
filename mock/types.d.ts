@@ -115,6 +115,7 @@ export interface Purchase {
   pack: string;
   idempotencyKey: string;
   quickPaymentMethodId: string;
+  policyAck: boolean;
 }
 
 export interface Signup {

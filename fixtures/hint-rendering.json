@@ -1,6 +1,6 @@
 [
-  { "slug": "pat_scope_missing", "scope": "transcripts:read", "details": {}, "expected": "This call needs the \"transcripts:read\" permission. Create a token that includes it. For billing, also turn on \"Let connected apps buy minutes\" in the app under Account → Connected apps." },
-  { "slug": "pat_scope_missing", "details": {}, "expected": "Create a token that includes it. For billing, also turn on \"Let connected apps buy minutes\" in the app under Account → Connected apps." },
+  { "slug": "pat_scope_missing", "scope": "transcripts:read", "details": {}, "expected": "This call needs the \"transcripts:read\" permission. Create a token that includes it. For billing, the token also needs \"Let this token buy minutes\" turned on when you create it, and \"Let connected apps buy minutes\" must be on in the app under Account → MCP." },
+  { "slug": "pat_scope_missing", "details": {}, "expected": "Create a token that includes it. For billing, the token also needs \"Let this token buy minutes\" turned on when you create it, and \"Let connected apps buy minutes\" must be on in the app under Account → MCP." },
 
   { "slug": "insufficient_balance", "details": { "needed_seconds": 1250, "balance_seconds": 600 }, "expected": "Not enough minutes: 21 needed, 10 available. Buy a pack with hs.buy(\"300min\") or in the app." },
   { "slug": "insufficient_balance", "details": {}, "expected": "Buy a pack with hs.buy(\"300min\") or in the app." },

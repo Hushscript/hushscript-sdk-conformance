@@ -1,11 +1,37 @@
 {
   "name": "buy-502-then-ok",
-  "call": { "op": "buy", "args": { "pack": "300min" } },
-  "mock": { "purchase": [{ "status": 502 }, { "status": 200 }] },
+  "call": {
+    "op": "buy",
+    "args": {
+      "pack": "300min"
+    }
+  },
+  "mock": {
+    "purchase": [
+      {
+        "status": 502
+      },
+      {
+        "status": 200
+      }
+    ]
+  },
   "expect": {
-    "result": { "seconds": 18000 },
-    "requests": { "POST /v1/billing/purchase": 2 },
+    "result": {
+      "seconds": 18000
+    },
+    "requests": {
+      "POST /v1/billing/purchase": 2,
+      "GET /v1/account": 0
+    },
     "sameIdempotencyKey": "POST /v1/billing/purchase",
-    "state": { "purchases": [{ "pack": "300min" }] }
+    "state": {
+      "purchases": [
+        {
+          "pack": "300min",
+          "policyAck": false
+        }
+      ]
+    }
   }
 }
