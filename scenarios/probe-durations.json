@@ -1,10 +1,10 @@
 {
   "name": "probe-durations",
-  "description": "Probe every key of fixtures/media/durations.json; each must be within 1 s. No requests.",
-  "call": { "op": "probe", "args": { "toleranceSeconds": 1 } },
+  "description": "Probe every key of fixtures/media/durations.json except those listed in refuse; each must be within 1 s. Every file in refuse must be refused by the sniffer (unsupported media), never probed. No requests.",
+  "call": { "op": "probe", "args": { "toleranceSeconds": 1, "refuse": ["webm-renamed.mp3"] } },
   "mock": {},
   "expect": {
-    "result": { "checked": 20, "failures": [] },
+    "result": { "checked": 19, "refused": 1, "failures": [] },
     "noRequests": true
   }
 }
