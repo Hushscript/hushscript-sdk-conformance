@@ -111,6 +111,22 @@ test('parts: 16 URLs per page, start paging, bad start, part count follows the s
   });
 });
 
+test('upload config: nullPartUrls nulls part_urls on the create answer or on the pages', async () => {
+  await withMock(async (m) => {
+    await select(m, { ...OPEN, upload: { nullPartUrls: 'create' } });
+    const create = await createJob(m.api);
+    assert.deepEqual(
+      [create.json.upload.part_urls, create.json.upload.next_part_number, create.json.upload.total_parts],
+      [null, null, 3],
+    );
+    await select(m, { ...OPEN, upload: { nullPartUrls: 'page' } });
+    const paged = await createJob(m.api);
+    assert.deepEqual([paged.json.upload.part_urls, paged.json.upload.next_part_number], [[], 1]);
+    const page = (await m.api('GET', `/v1/uploads/${paged.json.job_id}/part-urls?start=1`)).json;
+    assert.deepEqual([page.part_urls, page.next_part_number, page.total_parts], [null, null, 3]);
+  });
+});
+
 test('r2: signature, expiry, Authorization, Content-Length and size checks', async () => {
   await withMock(async (m) => {
     await select(m, { ...OPEN, upload: { expireFirstPage: true } });

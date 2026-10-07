@@ -64,6 +64,8 @@ function createReply(state, job) {
     const expired = state.config.upload?.expireFirstPage === true && !job.firstPageServed;
     job.firstPageServed = true;
     upload = uploadPage(state, job, 1, expired);
+    if (state.config.upload?.nullPartUrls === 'create') upload = { ...upload, part_urls: null, next_part_number: null };
+    if (state.config.upload?.nullPartUrls === 'page') upload = { ...upload, part_urls: [], next_part_number: 1 };
   }
   return {
     status: 200,
@@ -210,7 +212,11 @@ function partUrls(ctx) {
   const raw = ctx.query['start'];
   const start = raw === undefined ? 1 : Number(raw);
   if (!Number.isInteger(start) || start < 1 || start > (job.totalParts ?? 0)) return errorReply('bad_part_number');
-  return { status: 200, json: uploadPage(ctx.state, job, start, false) };
+  const page = uploadPage(ctx.state, job, start, false);
+  if (ctx.state.config.upload?.nullPartUrls === 'page') {
+    return { status: 200, json: { ...page, part_urls: null, next_part_number: null } };
+  }
+  return { status: 200, json: page };
 }
 
 /** @param {Ctx} ctx @returns {Reply} */
