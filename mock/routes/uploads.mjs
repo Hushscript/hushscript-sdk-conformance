@@ -65,6 +65,7 @@ function createReply(state, job) {
     job.firstPageServed = true;
     upload = uploadPage(state, job, 1, expired);
     if (state.config.upload?.nullPartUrls === 'create') upload = { ...upload, part_urls: null, next_part_number: null };
+    if (state.config.upload?.nullPartUrls === 'page') upload = { ...upload, part_urls: [], next_part_number: 1 };
   }
   return {
     status: 200,
