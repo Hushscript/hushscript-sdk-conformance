@@ -76,7 +76,12 @@ function purchase(ctx) {
   const replay = state.purchaseResponses.get(key);
   if (replay !== undefined) return { status: 200, json: { status: 'ok', balance_seconds: replay } };
   state.balanceSeconds += pack.seconds;
-  state.purchases.push({ pack: pack.id, idempotencyKey: key, quickPaymentMethodId: card, policyAck: body['policy_ack'] === true });
+  state.purchases.push({
+    pack: pack.id,
+    idempotencyKey: key,
+    quickPaymentMethodId: card,
+    policyAck: body['policy_ack'] === true,
+  });
   state.purchaseResponses.set(key, state.balanceSeconds);
   return { status: 200, json: { status: 'ok', balance_seconds: state.balanceSeconds } };
 }
