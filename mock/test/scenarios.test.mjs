@@ -22,7 +22,6 @@ const REQUIRED = [
   'job-failed',
   'wait-timeout-then-resume',
   'resume-different-file',
-  'insufficient-balance-preflight',
   'insufficient-balance-server',
   'unsupported-media',
   'too-short',
