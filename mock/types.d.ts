@@ -60,6 +60,7 @@ export interface MockConfig {
   cardList?: { default_id: string | null; methods: CardRow[] };
   upload?: UploadConfig | null;
   fixture?: string;
+  expectedUploadFile?: string;
   listing?: { count: number };
   jobFlow?: Phase[];
   completeState?: string;

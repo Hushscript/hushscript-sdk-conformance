@@ -1,5 +1,6 @@
 // @ts-check
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { test } from 'node:test';
 import { FILE_SIZE, createJob, partBytes, select, withMock } from './helpers.mjs';
@@ -311,5 +312,125 @@ test('upload config: loseParts drops a part silently, completeState and verified
     for (const part of next.upload.part_urls) tags.push({ n: part.n, etag: (await putPart(next.upload, part)).etag });
     const done = await m.api('POST', `/v1/uploads/${next.job_id}/complete`, { json: { parts: tags } });
     assert.deepEqual([done.json.state, done.json.verified_seconds], ['done', 25]);
+  });
+});
+
+test('create: idempotency keys accept only 16–128 ASCII bytes without spaces', async () => {
+  await withMock(async (m) => {
+    await select(m, OPEN);
+    for (const key of ['!'.repeat(16), '~'.repeat(128)]) {
+      assert.equal((await createJob(m.api, { key })).status, 200);
+    }
+    for (const key of [
+      'a'.repeat(15),
+      'a'.repeat(129),
+      ' '.repeat(16),
+      'aaaaaaa aaaaaaaa',
+      'a'.repeat(15) + '\x1f',
+      'a'.repeat(15) + '\x7f',
+      'a'.repeat(15) + 'é',
+      'a'.repeat(16) + '\n',
+    ]) {
+      const reply = await createJob(m.api, { key });
+      assert.equal(reply.json.error, 'invalid_idempotency_key', JSON.stringify(key));
+      assert.equal(reply.json.code, 1040);
+    }
+    assert.equal((await m.api('GET', '/__state', { auth: false })).json.jobs, 2);
+  });
+});
+
+const FIXTURE = readFileSync(new URL('../../fixtures/media/cbr-20s.mp3', import.meta.url));
+
+for (const name of ['happy-direct', 'happy-proxied', 'create-null-part-urls', 'page-null-part-urls']) {
+  test(`fixture integrity ${name}: same-size corruption rejected; valid bytes complete`, async () => {
+    await withMock(async (m) => {
+      await m.scenario(name);
+      const { job_id: id, upload } = (await createJob(m.api)).json;
+      const partSize = upload?.part_size_bytes ?? 32 * 1024 * 1024;
+      const total = Math.ceil(FIXTURE.length / partSize);
+      const direct = name === 'happy-direct';
+      const parts = [];
+      for (let n = 1; n <= total; n++) {
+        const body = FIXTURE.subarray((n - 1) * partSize, n * partSize);
+        const put = async (/** @type {Uint8Array} */ bytes) => {
+          if (direct) {
+            return fetch(upload.part_urls[n - 1].url, { method: 'PUT', body: bytes });
+          }
+          return m.api('PUT', `/v1/uploads/${id}/parts/${n}`, {
+            body: bytes,
+            headers: { 'content-type': 'application/octet-stream' },
+          });
+        };
+        const zeros = await put(new Uint8Array(body.length));
+        assert.equal(zeros.status, 400);
+        // A rotated slice has the right size and a self-consistent digest, but the wrong offset.
+        const shifted = Buffer.concat([body.subarray(1), body.subarray(0, 1)]);
+        assert.equal((await put(shifted)).status, 400);
+        const good = await put(body);
+        assert.equal(good.status, 200);
+        assert.equal((await put(body)).status, 200, 're-PUT of the correct part is safe');
+        if (direct) {
+          parts.push({ n, etag: (good.headers.get('etag') ?? '').replaceAll('"', '') });
+        }
+      }
+      assert.equal((await m.api('POST', `/v1/uploads/${id}/complete`, direct ? { json: { parts } } : {})).status, 200);
+    });
+  });
+}
+
+test('fixture integrity: mixed transport and resumed uploads retain original ranges', async () => {
+  await withMock(async (m) => {
+    await select(m, { ...OPEN, expectedUploadFile: 'media/cbr-20s.mp3' });
+    const { job_id: id, upload } = (await createJob(m.api)).json;
+    const first = FIXTURE.subarray(0, upload.part_size_bytes);
+    const direct = await fetch(upload.part_urls[0].url, { method: 'PUT', body: first });
+    assert.equal(direct.status, 200);
+    const replay = (await createJob(m.api)).json;
+    assert.equal(replay.job_id, id);
+    assert.equal((await m.api('GET', '/__state', { auth: false })).json.jobs, 1);
+    for (const n of [2, 3]) {
+      const body = FIXTURE.subarray((n - 1) * upload.part_size_bytes, n * upload.part_size_bytes);
+      const path = `/v1/uploads/${id}/parts/${n}`;
+      const headers = { 'content-type': 'application/octet-stream' };
+      assert.equal((await m.api('PUT', path, { body: first.subarray(0, body.length), headers })).status, 400);
+      assert.equal((await m.api('PUT', path, { body, headers })).status, 200);
+    }
+    assert.equal(
+      (
+        await m.api('POST', `/v1/uploads/${id}/complete`, {
+          json: { parts: [{ n: 1, etag: (direct.headers.get('etag') ?? '').replaceAll('"', '') }] },
+        })
+      ).status,
+      200,
+    );
+  });
+});
+
+test('fixture integrity: resume binds to the prior source rather than the final mismatched file', async () => {
+  await withMock(async (m) => {
+    await m.scenario('resume-different-file');
+    const { upload } = (await createJob(m.api)).json;
+    assert.equal(
+      (
+        await fetch(upload.part_urls[0].url, {
+          method: 'PUT',
+          body: FIXTURE.subarray(0, upload.part_size_bytes),
+        })
+      ).status,
+      200,
+    );
+  });
+});
+
+test('fixture integrity: ad-hoc config rejects traversal and nonexistent fixtures', async () => {
+  await withMock(async (m) => {
+    for (const file of ['../package.json', 'media/missing.mp3', 'media/../../package.json']) {
+      const reply = await m.api('POST', '/__scenario', {
+        json: { mock: { expectedUploadFile: file } },
+        auth: false,
+      });
+      assert.equal(reply.status, 400);
+      assert.equal(reply.json.error, 'bad_scenario');
+    }
   });
 });

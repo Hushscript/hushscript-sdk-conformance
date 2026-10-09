@@ -1,4 +1,5 @@
 // @ts-check
+import { statSync } from 'node:fs';
 import { isRecord } from './util.mjs';
 
 /** @typedef {import('./types.js').State} State */
@@ -39,6 +40,7 @@ export const CONFIG_KEYS = [
   'cardList',
   'upload',
   'fixture',
+  'expectedUploadFile',
   'listing',
   'jobFlow',
   'completeState',
@@ -128,6 +130,15 @@ export function loadMock(raw) {
       config[key] = value;
     } else {
       throw new Error(`unknown mock key: ${key}`);
+    }
+  }
+  const file = config['expectedUploadFile'];
+  if (file !== undefined) {
+    if (typeof file !== 'string' || !/^media\/[\w-]+\.[A-Za-z0-9]+$/.test(file)) {
+      throw new Error('expectedUploadFile must name a media fixture');
+    }
+    if (!statSync(new URL(`../fixtures/${file}`, import.meta.url)).isFile()) {
+      throw new Error('expectedUploadFile must name a media fixture');
     }
   }
   return { config: /** @type {MockConfig} */ (config), rules };

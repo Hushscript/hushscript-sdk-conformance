@@ -1,7 +1,15 @@
 // @ts-check
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { createJob, partBytes, withMock } from './helpers.mjs';
+import { createJob, withMock } from './helpers.mjs';
+
+const FILE = readFileSync(new URL('../../fixtures/media/cbr-20s.mp3', import.meta.url));
+
+/** @param {{ part_size_bytes: number }} upload @param {number} n */
+function partBytes(upload, n) {
+  return FILE.subarray((n - 1) * upload.part_size_bytes, n * upload.part_size_bytes);
+}
 
 const sleep = (/** @type {number} */ ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
