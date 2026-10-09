@@ -1,5 +1,6 @@
 // @ts-check
 import { createHash } from 'node:crypto';
+import { createReadStream, statSync } from 'node:fs';
 import { BASE_EPOCH, activeJobs, limitsView } from '../state.mjs';
 import { errorReply, field, isInt, isRecord, withFutureFields } from '../util.mjs';
 
@@ -12,6 +13,31 @@ import { errorReply, field, isInt, isRecord, withFutureFields } from '../util.mj
 const PAGE_SIZE = 16;
 const MAX_PART_BYTES = 32 * 1024 * 1024;
 const URL_LIFETIME_SECONDS = 86_400;
+
+/** @param {State} state */
+function fixturePath(state) {
+  return new URL(`../../fixtures/${state.config.expectedUploadFile ?? ''}`, import.meta.url);
+}
+
+/**
+ * Hash the original fixture range, independently of the SDK's body and completion ETag.
+ * @param {Ctx} ctx
+ * @param {Job} job
+ * @param {number} n
+ */
+async function matchesFixture(ctx, job, n) {
+  if (ctx.state.config.expectedUploadFile === undefined) return true;
+  const partSize = job.partSize ?? MAX_PART_BYTES;
+  const start = (n - 1) * partSize;
+  const length = Math.min(partSize, job.size - start);
+  if (length <= 0 || ctx.bodyLength !== length) return false;
+  const hash = createHash('sha256');
+  for await (const chunk of createReadStream(fixturePath(ctx.state), { start, end: start + length - 1 })) {
+    if (!(chunk instanceof Uint8Array)) return false;
+    hash.update(chunk);
+  }
+  return hash.digest('hex') === ctx.bodySha256;
+}
 
 /**
  * @param {string} jobId
@@ -151,10 +177,15 @@ function createUpload(ctx) {
   if (!isInt(duration) || duration < 15 || duration > 36_000) return errorReply('duration_out_of_range');
   const key = body['idempotency_key'];
   if (key !== undefined && key !== null) {
-    if (typeof key !== 'string' || !/^[\x20-\x7e]{16,128}$/.test(key)) return errorReply('invalid_idempotency_key');
+    if (typeof key !== 'string' || key.length < 16 || key.length > 128 || /[^\x21-\x7e]/.test(key)) {
+      return errorReply('invalid_idempotency_key');
+    }
     const existing = state.keyIndex.get(key);
     const replay = existing === undefined ? undefined : state.jobs.get(existing);
     if (replay !== undefined) return createReply(state, replay);
+  }
+  if (state.config.expectedUploadFile !== undefined && size !== statSync(fixturePath(state)).size) {
+    return errorReply('size_out_of_range');
   }
   const maxActive = state.config.account?.max_active_jobs ?? 50;
   if (activeJobs(state).length + (state.config.account?.active_jobs ?? 0) >= maxActive) {
@@ -219,8 +250,8 @@ function partUrls(ctx) {
   return { status: 200, json: page };
 }
 
-/** @param {Ctx} ctx @returns {Reply} */
-function proxiedPart(ctx) {
+/** @param {Ctx} ctx @returns {Promise<Reply>} */
+async function proxiedPart(ctx) {
   const job = findJob(ctx.state, ctx.params['job'] ?? '');
   if (!isJob(job)) return job;
   const n = Number(ctx.params['n']);
@@ -229,12 +260,13 @@ function proxiedPart(ctx) {
   const type = ctx.headers['content-type'] ?? '';
   if (!type.startsWith('application/octet-stream')) return errorReply('bad_request');
   if (ctx.bodyLength > MAX_PART_BYTES) return errorReply('part_too_large');
+  if (!(await matchesFixture(ctx, job, n))) return errorReply('bad_request');
   job.parts.set(n, { n, size: ctx.bodyLength, md5: ctx.bodyMd5, via: 'proxied' });
   return { status: 200, json: { ok: true, part: n } };
 }
 
-/** @param {Ctx} ctx @returns {Reply} */
-function r2Put(ctx) {
+/** @param {Ctx} ctx @returns {Promise<Reply>} */
+async function r2Put(ctx) {
   const { state } = ctx;
   const jobId = ctx.params['job'] ?? '';
   const n = Number(ctx.params['n']);
@@ -270,6 +302,9 @@ function r2Put(ctx) {
       'IncompleteBody',
       `The request body is ${ctx.bodyLength} bytes; this part must be ${expected}.`,
     );
+  }
+  if (!(await matchesFixture(ctx, job, n))) {
+    return r2Error(400, 'BadDigest', 'The part does not match the original fixture byte range.');
   }
   state.directSuccesses += 1;
   if (!(state.config.upload?.loseParts ?? []).includes(n)) {

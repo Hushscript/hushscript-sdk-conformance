@@ -251,7 +251,16 @@ export async function startMock(options = {}) {
             send(res, { status: 404, json: { error: 'unknown_scenario', name } });
             return;
           }
-          load(name, scenario['mock'], scenario['expect']);
+          const call = scenario['call'];
+          const prior = field(call, 'prior');
+          const source = field(prior, 'op') === 'transcribe' ? prior : call;
+          const file = field(field(source, 'args'), 'file');
+          const mock = scenario['mock'];
+          const boundMock =
+            field(source, 'op') === 'transcribe' && typeof file === 'string' && isRecord(mock)
+              ? { ...mock, expectedUploadFile: file }
+              : mock;
+          load(name, boundMock, scenario['expect']);
         } else if (isRecord(json) && 'mock' in json) {
           load('adhoc', json['mock'], json['expect']);
         } else {

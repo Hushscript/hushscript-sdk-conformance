@@ -1,10 +1,12 @@
 // @ts-check
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { withMock } from './helpers.mjs';
 
-const SIZE = 161037;
+const FILE = readFileSync(new URL('../../fixtures/media/cbr-20s.mp3', import.meta.url));
+const SIZE = FILE.length;
 
 test('happy-direct: create, PUT parts to /__r2, complete, job, transcript', async () => {
   await withMock(async ({ api, scenario, port }) => {
@@ -31,12 +33,12 @@ test('happy-direct: create, PUT parts to /__r2, complete, job, transcript', asyn
     /** @type {{ n: number, etag: string }[]} */
     const parts = [];
     for (const { n, url } of upload.part_urls) {
-      const size = n < 3 ? upload.part_size_bytes : SIZE - 2 * upload.part_size_bytes;
-      const put = await fetch(url, { method: 'PUT', body: new Uint8Array(size).fill(n) });
+      const body = FILE.subarray((n - 1) * upload.part_size_bytes, n * upload.part_size_bytes);
+      const put = await fetch(url, { method: 'PUT', body: body });
       assert.equal(put.status, 200);
       const etag = put.headers.get('etag');
       assert.ok(etag?.startsWith('"'));
-      const expected = createHash('md5').update(new Uint8Array(size).fill(n)).digest('hex');
+      const expected = createHash('md5').update(body).digest('hex');
       assert.equal(etag, `"${expected}"`);
       parts.push({ n, etag: expected });
     }
