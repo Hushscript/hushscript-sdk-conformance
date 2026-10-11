@@ -93,9 +93,9 @@ Set `CONFORMANCE_CONTEXT=../hushscript-sdk-conformance` to build from a local ch
 ## Working on the suite
 
 ```sh
-just test [22|24]   # mock self-tests on Node 22 (default) or 24
+just test [22|24|26] # mock self-tests on Node 22 (default), 24, or 26
 just lint           # every static check, in containers
-just ci [22|24]     # lint, tests, and a build-and-probe of the mock image
+just ci [22|24|26]   # lint, tests, and a build-and-probe of the mock image
 ```
 
 ## Regenerating
