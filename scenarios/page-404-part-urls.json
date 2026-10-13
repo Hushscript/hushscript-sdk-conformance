@@ -1,0 +1,18 @@
+{
+  "name": "page-404-part-urls",
+  "description": "The create page is empty and points at part 1; the part-urls page answers HTTP 404 not_found before any direct PUT: every part goes through the API and complete succeeds.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "upload": { "parts": 3, "nullPartUrls": "page404" } },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": {
+      "POST /v1/uploads": 1,
+      "GET /v1/uploads/{job}/part-urls": 1,
+      "PUT /__r2/{job}/{n}": 0,
+      "PUT /v1/uploads/{job}/parts/{n}": 3,
+      "POST /v1/uploads/{job}/complete": 1
+    },
+    "queries": { "GET /v1/uploads/{job}/part-urls": [{ "start": "1" }] },
+    "authorization": { "PUT /v1/uploads/{job}/parts/{n}": "present" }
+  }
+}

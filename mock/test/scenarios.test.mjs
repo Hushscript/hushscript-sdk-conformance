@@ -15,6 +15,7 @@ const REQUIRED = [
   'part-urls-paging',
   'create-null-part-urls',
   'page-null-part-urls',
+  'page-404-part-urls',
   'create-429-no-retry-after',
   'create-network-drop-after-commit',
   'too-many-active-jobs',

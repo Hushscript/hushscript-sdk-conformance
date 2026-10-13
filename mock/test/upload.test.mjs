@@ -128,6 +128,17 @@ test('upload config: nullPartUrls nulls part_urls on the create answer or on the
   });
 });
 
+test('upload config: nullPartUrls page404 answers the pages with the not_found envelope', async () => {
+  await withMock(async (m) => {
+    await select(m, { ...OPEN, upload: { nullPartUrls: 'page404' } });
+    const created = await createJob(m.api);
+    assert.deepEqual([created.json.upload.part_urls, created.json.upload.next_part_number], [[], 1]);
+    const page = await m.api('GET', `/v1/uploads/${created.json.job_id}/part-urls?start=1`);
+    assert.equal(page.status, 404);
+    assert.deepEqual(page.json, { error: 'not_found', code: 4000 });
+  });
+});
+
 test('r2: signature, expiry, Authorization, Content-Length and size checks', async () => {
   await withMock(async (m) => {
     await select(m, { ...OPEN, upload: { expireFirstPage: true } });
@@ -341,7 +352,13 @@ test('create: idempotency keys accept only 16–128 ASCII bytes without spaces',
 
 const FIXTURE = readFileSync(new URL('../../fixtures/media/cbr-20s.mp3', import.meta.url));
 
-for (const name of ['happy-direct', 'happy-proxied', 'create-null-part-urls', 'page-null-part-urls']) {
+for (const name of [
+  'happy-direct',
+  'happy-proxied',
+  'create-null-part-urls',
+  'page-null-part-urls',
+  'page-404-part-urls',
+]) {
   test(`fixture integrity ${name}: same-size corruption rejected; valid bytes complete`, async () => {
     await withMock(async (m) => {
       await m.scenario(name);

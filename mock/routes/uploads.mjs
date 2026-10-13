@@ -90,8 +90,11 @@ function createReply(state, job) {
     const expired = state.config.upload?.expireFirstPage === true && !job.firstPageServed;
     job.firstPageServed = true;
     upload = uploadPage(state, job, 1, expired);
-    if (state.config.upload?.nullPartUrls === 'create') upload = { ...upload, part_urls: null, next_part_number: null };
-    if (state.config.upload?.nullPartUrls === 'page') upload = { ...upload, part_urls: [], next_part_number: 1 };
+    const nullPartUrls = state.config.upload?.nullPartUrls;
+    if (nullPartUrls === 'create') upload = { ...upload, part_urls: null, next_part_number: null };
+    if (nullPartUrls === 'page' || nullPartUrls === 'page404') {
+      upload = { ...upload, part_urls: [], next_part_number: 1 };
+    }
   }
   return {
     status: 200,
@@ -247,6 +250,7 @@ function partUrls(ctx) {
   if (ctx.state.config.upload?.nullPartUrls === 'page') {
     return { status: 200, json: { ...page, part_urls: null, next_part_number: null } };
   }
+  if (ctx.state.config.upload?.nullPartUrls === 'page404') return errorReply('not_found');
   return { status: 200, json: page };
 }
 
