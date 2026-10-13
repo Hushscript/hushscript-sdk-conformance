@@ -1,0 +1,34 @@
+1
+00:00:00,000 --> 00:00:02,400
+Speaker A: Welcome to the quarterly planning call.
+
+2
+00:00:02,400 --> 00:00:06,100
+Speaker A: Today we will go through the roadmap, the
+budget and the hiring plan for next year.
+
+3
+00:00:06,100 --> 00:00:08,000
+Speaker A: Let's begin.
+
+4
+00:00:08,250 --> 00:00:12,494
+Speaker A: First, the roadmap has three main themes:
+reliability, speed and a simpler setup for
+
+5
+00:00:12,494 --> 00:00:12,999
+Speaker A: new teams.
+
+6
+00:00:13,000 --> 00:00:15,500
+Speaker A: Any questions so far?
+
+7
+00:00:16,000 --> 00:00:23,000
+Speaker A: Great. Then we move on to the budget,
+which is flat compared with the previous
+
+8
+00:00:23,029 --> 00:00:23,750
+Speaker A: quarter.

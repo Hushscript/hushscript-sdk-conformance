@@ -1,0 +1,22 @@
+{
+  // isolatedDeclarations is left out on purpose: it governs .d.ts emit for TypeScript
+  // libraries, and this is a JavaScript repo (JSDoc, checkJs) that never emits declarations.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true
+  },
+  "include": ["mock/**/*", "eslint.config.js"]
+}

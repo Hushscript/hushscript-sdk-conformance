@@ -1,0 +1,7 @@
+[0:00] Dana: Hola, gracias por llamar a la línea de soporte.
+
+[0:03] Speaker B: Hola, quería preguntar por mi última factura, parece incorrecta.
+
+[0:08] Dana: Por supuesto. ¿Puede decirme el número de factura y la fecha?
+
+[0:12] Speaker B: Claro, es la del primero de marzo, y creo que me cobraron dos veces el mismo paquete de minutos.

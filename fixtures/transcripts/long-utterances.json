@@ -1,0 +1,40 @@
+{
+  "id": "fx_long_utterances",
+  "title": "Long utterances",
+  "language_detected": "en",
+  "duration_seconds": 120,
+  "speaker_names": {},
+  "tags": [],
+  "created_at": 1760000000,
+  "updated_at": 1760000000,
+  "auto_delete_at": null,
+  "edited": false,
+  "matter_code": null,
+  "client_code": null,
+  "body": {
+    "version": 1,
+    "original": {
+      "utterances": [
+        {
+          "speaker": "A",
+          "start_ms": 0,
+          "end_ms": 38000,
+          "text": "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo, lima mike november oscar papa quebec romeo sierra tango uniform victor, whiskey xray yankee zulu alpha bravo charlie delta echo foxtrot golf, hotel india juliet kilo lima mike november oscar papa quebec romeo, sierra tango uniform victor whiskey xray yankee zulu alpha bravo charlie, delta echo foxtrot golf hotel india juliet kilo lima mike november, oscar papa quebec romeo sierra tango uniform victor whiskey xray yankee, zulu alpha bravo charlie delta echo foxtrot golf hotel india juliet, kilo lima mike november oscar papa quebec."
+        },
+        {
+          "speaker": "B",
+          "start_ms": 38500,
+          "end_ms": 41000,
+          "text": "hotel india juliet kilo lima mike november oscar papa quebec romeo, sierra tango uniform victor whiskey xray yankee zulu alpha bravo charlie, delta echo foxtrot golf hotel india juliet kilo lima mike november, oscar papa quebec romeo sierra tango uniform victor whiskey xray yankee, zulu alpha bravo charlie delta echo foxtrot golf hotel india juliet, kilo lima mike november oscar papa quebec romeo sierra tango uniform, victor whiskey xray yankee zulu alpha bravo charlie delta echo foxtrot, golf hotel india juliet kilo lima mike november oscar papa quebec, romeo sierra tango uniform victor whiskey xray yankee supercalifragilisticexpialidocious-and-then-some-more-letters delta echo foxtrot golf hotel india juliet kilo lima mike november, oscar."
+        },
+        {
+          "speaker": "A",
+          "start_ms": 41500,
+          "end_ms": 113500,
+          "text": "november oscar papa quebec romeo sierra tango uniform victor whiskey xray, yankee zulu alpha bravo charlie delta echo foxtrot golf hotel india, juliet kilo lima mike november oscar papa quebec romeo sierra tango, uniform victor whiskey xray yankee zulu alpha bravo charlie delta echo, foxtrot golf hotel india juliet kilo lima mike november oscar papa, quebec romeo sierra tango uniform victor whiskey xray yankee zulu alpha, bravo charlie delta echo foxtrot golf hotel india juliet kilo lima, mike november oscar papa quebec romeo sierra tango uniform victor whiskey, xray yankee zulu alpha bravo charlie delta echo foxtrot golf hotel, india juliet kilo lima mike november oscar papa quebec romeo sierra, tango uniform victor whiskey xray yankee zulu alpha bravo charlie."
+        }
+      ]
+    },
+    "translations": {}
+  }
+}

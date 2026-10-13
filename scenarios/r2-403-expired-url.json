@@ -1,0 +1,11 @@
+{
+  "name": "r2-403-expired-url",
+  "description": "The URLs in the create response are already expired; R2 answers 403 and the SDK re-fetches the part-urls page.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "upload": { "expireFirstPage": true } },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requestsAtLeast": { "GET /v1/uploads/{job}/part-urls": 1 },
+    "requests": { "PUT /v1/uploads/{job}/parts/{n}": 0, "POST /v1/uploads": 1, "POST /v1/uploads/{job}/complete": 1 }
+  }
+}

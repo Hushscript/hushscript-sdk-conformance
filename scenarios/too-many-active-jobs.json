@@ -1,0 +1,12 @@
+{
+  "name": "too-many-active-jobs",
+  "description": "The first create answers too_many_active_jobs (5001); the SDK waits at least 30 s and succeeds on the next try.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "create": [{ "error": "too_many_active_jobs" }] },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": { "POST /v1/uploads": 2 },
+    "minGapSeconds": { "POST /v1/uploads": 30 },
+    "state": { "jobs": 1 }
+  }
+}

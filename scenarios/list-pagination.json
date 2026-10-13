@@ -1,0 +1,11 @@
+{
+  "name": "list-pagination",
+  "description": "120 transcripts at the default page size of 50: three requests, the later two with a cursor.",
+  "call": { "op": "listTranscripts", "args": {} },
+  "mock": { "listing": { "count": 120 } },
+  "expect": {
+    "result": { "count": 120, "firstId": "tr_list_001", "lastId": "tr_list_120" },
+    "requests": { "GET /v1/transcripts": 3 },
+    "queries": { "GET /v1/transcripts": [{}, { "cursor": "*" }, { "cursor": "*" }] }
+  }
+}

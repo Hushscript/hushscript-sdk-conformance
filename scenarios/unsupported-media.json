@@ -1,0 +1,14 @@
+{
+  "name": "unsupported-media",
+  "description": "A WebM file named .mp3 is rejected by its magic bytes before any request.",
+  "call": { "op": "transcribe", "args": { "file": "media/webm-renamed.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 } },
+  "expect": {
+    "error": {
+      "code": "unsupported_media",
+      "class": "UnsupportedMediaError",
+      "hintContains": "ffmpeg -i input -vn -c:a libopus output.opus"
+    },
+    "noRequests": true
+  }
+}

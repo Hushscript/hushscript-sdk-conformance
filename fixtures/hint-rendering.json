@@ -1,0 +1,40 @@
+[
+  { "slug": "pat_scope_missing", "scope": "transcripts:read", "details": {}, "expected": "This call needs the \"transcripts:read\" permission. Create a token that includes it. For billing, the token also needs \"Let this token buy minutes\" turned on when you create it, and \"Let connected apps buy minutes\" must be on in the app under Account → MCP." },
+  { "slug": "pat_scope_missing", "details": {}, "expected": "Create a token that includes it. For billing, the token also needs \"Let this token buy minutes\" turned on when you create it, and \"Let connected apps buy minutes\" must be on in the app under Account → MCP." },
+
+  { "slug": "insufficient_balance", "details": { "needed_seconds": 1250, "balance_seconds": 600 }, "expected": "Not enough minutes: 21 needed, 10 available. Buy a pack with the SDK's buy method or in the app." },
+  { "slug": "insufficient_balance", "details": {}, "expected": "Buy a pack with the SDK's buy method or in the app." },
+  { "slug": "insufficient_balance", "details": { "needed_seconds": 1250 }, "expected": "Buy a pack with the SDK's buy method or in the app." },
+  { "slug": "insufficient_balance", "details": { "balance_seconds": 600 }, "expected": "Buy a pack with the SDK's buy method or in the app." },
+  { "slug": "insufficient_balance", "details": { "needed_seconds": 60, "balance_seconds": 119 }, "expected": "Not enough minutes: 1 needed, 1 available. Buy a pack with the SDK's buy method or in the app." },
+  { "slug": "insufficient_balance", "details": { "needed_seconds": 61, "balance_seconds": 59 }, "expected": "Not enough minutes: 2 needed, 0 available. Buy a pack with the SDK's buy method or in the app." },
+  { "slug": "insufficient_balance", "details": { "needed_seconds": 1, "balance_seconds": 0 }, "expected": "Not enough minutes: 1 needed, 0 available. Buy a pack with the SDK's buy method or in the app." },
+  { "slug": "insufficient_balance", "details": { "needed_seconds": 0, "balance_seconds": 3600 }, "expected": "Not enough minutes: 0 needed, 60 available. Buy a pack with the SDK's buy method or in the app." },
+
+  { "slug": "rate_limited", "details": { "retry_after_seconds": 30 }, "expected": "Too many requests. The SDK already waited and retried; slow down or try again in 30 s." },
+  { "slug": "rate_limited", "details": { "retry_after_seconds": 0 }, "expected": "Too many requests. The SDK already waited and retried; slow down or try again in 0 s." },
+  { "slug": "rate_limited", "details": {}, "expected": "Too many requests." },
+
+  { "slug": "agent_purchase_capped", "details": { "retry_after_seconds": 3600 }, "expected": "This account has used its 3 purchase attempts for the last 24 hours. Try again in 3600 s." },
+  { "slug": "agent_purchase_capped", "details": {}, "expected": "This account has used its 3 purchase attempts for the last 24 hours." },
+
+  { "slug": "agent_pack_locked", "details": { "allowed_packs": ["45min", "300min"] }, "expected": "New agent accounts can buy 45min, 300min until earlier purchases settle." },
+  { "slug": "agent_pack_locked", "details": { "allowed_packs": ["45min"] }, "expected": "New agent accounts can buy 45min until earlier purchases settle." },
+  { "slug": "agent_pack_locked", "details": {}, "expected": null },
+
+  { "slug": "daily_limit", "details": { "used_seconds": 3599, "max_seconds": 86400 }, "expected": "This upload would pass your daily transcription limit (59 of 1440 min used in the last 24 h)." },
+  { "slug": "daily_limit", "details": { "used_seconds": 7260, "max_seconds": 7260 }, "expected": "This upload would pass your daily transcription limit (121 of 121 min used in the last 24 h)." },
+  { "slug": "daily_limit", "details": { "used_seconds": 59, "max_seconds": 119 }, "expected": "This upload would pass your daily transcription limit (0 of 1 min used in the last 24 h)." },
+  { "slug": "daily_limit", "details": { "used_seconds": 3599 }, "expected": null },
+  { "slug": "daily_limit", "details": { "max_seconds": 86400 }, "expected": null },
+  { "slug": "daily_limit", "details": {}, "expected": null },
+
+  { "slug": "policy_version_stale", "details": { "current_version": "2026-09-01" }, "expected": "Accept the current terms version: 2026-09-01." },
+  { "slug": "policy_version_stale", "details": {}, "expected": null },
+
+  { "slug": "too_many_active_jobs", "details": {}, "expected": "50 jobs are already in progress. Wait for some to finish." },
+  { "slug": "too_many_active_jobs", "details": { "retry_after_seconds": 30 }, "expected": "50 jobs are already in progress. Wait for some to finish." },
+  { "slug": "unsupported_media", "details": {}, "expected": "Supported: MP3, M4A/MP4/MOV, WAV, FLAC, OGG/Opus. Convert it first, e.g. ffmpeg -i input -vn -c:a libopus output.opus" },
+
+  { "slug": "job_not_found", "details": { "needed_seconds": 60 }, "expected": null }
+]

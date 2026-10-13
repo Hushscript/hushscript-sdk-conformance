@@ -1,0 +1,11 @@
+Dana: Thanks for joining everyone. I will start with a short recap.
+
+Speaker B: Sounds good, go ahead.
+
+Speaker C: Can you share the slides first? I cannot see them yet. Thanks.
+
+Dana: Done. The numbers are up four percent, mostly from the new onboarding flow.
+
+Speaker B: That matches what support is seeing, fewer tickets about the first upload.
+
+Dana: Good to hear. Next topic: the release schedule, which depends on the review of the new billing screens and on how quickly the translations come back.

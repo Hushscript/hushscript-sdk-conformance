@@ -1,0 +1,35 @@
+{
+  "name": "buy-happy",
+  "description": "buy('300min') reads the cards, buys with the default one and returns the new balance.",
+  "call": {
+    "op": "buy",
+    "args": {
+      "pack": "300min"
+    }
+  },
+  "mock": {
+    "account": {
+      "balance_seconds": 0
+    }
+  },
+  "expect": {
+    "result": {
+      "seconds": 18000,
+      "minutes": 300
+    },
+    "requests": {
+      "POST /v1/billing/purchase": 1,
+      "GET /v1/billing/cards": 1,
+      "GET /v1/account": 0
+    },
+    "state": {
+      "purchases": [
+        {
+          "pack": "300min",
+          "quickPaymentMethodId": "pm_conf_default",
+          "policyAck": false
+        }
+      ]
+    }
+  }
+}

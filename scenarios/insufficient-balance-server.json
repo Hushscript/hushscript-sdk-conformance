@@ -1,0 +1,21 @@
+{
+  "name": "insufficient-balance-server",
+  "description": "No client-side balance check: the account balance is below the file's estimate, create still goes out and answers 402 with the balance details.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": {
+    "account": { "balance_seconds": 10 },
+    "create": [
+      { "error": "insufficient_balance", "extra": { "needed_seconds": 21, "balance_seconds": 10, "held_seconds": 0 } }
+    ]
+  },
+  "expect": {
+    "error": {
+      "code": "insufficient_balance",
+      "class": "InsufficientBalanceError",
+      "status": 402,
+      "numericCode": 3001,
+      "details": { "neededSeconds": 21, "balanceSeconds": 10, "heldSeconds": 0 }
+    },
+    "requests": { "POST /v1/uploads": 1 }
+  }
+}

@@ -1,0 +1,5 @@
+[59:59] Host: Just before the hour. Exactly on the hour.
+
+[1:00:05] Speaker B: A little after, with a fractional second. One hour, one minute and one second.
+
+[1:02:05] Host: Over an hour in, a long closing remark that the speaker keeps going with for quite a while.

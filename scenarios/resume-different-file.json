@@ -1,0 +1,20 @@
+{
+  "name": "resume-different-file",
+  "description": "resume() with a file of a different size than the token's is refused with ResumeMismatchError before any request. The final call sends nothing.",
+  "call": {
+    "op": "resume",
+    "args": { "file": "media/cbr-61s.mp3" },
+    "prior": {
+      "op": "transcribe",
+      "args": { "file": "media/cbr-20s.mp3", "options": { "waitTimeout": 30 } },
+      "expectError": { "class": "WaitTimeoutError", "fields": { "resumeToken": "<present>" } }
+    }
+  },
+  "mock": { "account": { "balance_seconds": 36000 }, "jobFlow": [{ "state": "processing" }] },
+  "expect": {
+    "error": { "class": "ResumeMismatchError", "code": "resume_file_mismatch", "status": null },
+    "noRequests": true,
+    "requests": { "POST /v1/uploads": 1 },
+    "state": { "jobs": 1 }
+  }
+}

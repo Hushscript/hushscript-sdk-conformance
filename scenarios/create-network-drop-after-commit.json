@@ -1,0 +1,12 @@
+{
+  "name": "create-network-drop-after-commit",
+  "description": "The mock commits the job and destroys the socket. The retry carries the same key and gets the same job: one job, one hold.",
+  "call": { "op": "transcribe", "args": { "file": "media/cbr-20s.mp3" } },
+  "mock": { "account": { "balance_seconds": 36000 }, "create": [{ "drop": "after-commit" }] },
+  "expect": {
+    "result": { "id": "tr_conf_0001", "utteranceCount": 6 },
+    "requests": { "POST /v1/uploads": 2 },
+    "sameIdempotencyKey": "POST /v1/uploads",
+    "state": { "jobs": 1, "holds": 0 }
+  }
+}

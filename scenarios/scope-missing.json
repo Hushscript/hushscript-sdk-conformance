@@ -1,0 +1,15 @@
+{
+  "name": "scope-missing",
+  "description": "A token without transcripts:read lists transcripts; the hint names the scope from the SDK's own operation map.",
+  "call": { "op": "listTranscripts", "args": {} },
+  "mock": { "transcripts": [{ "error": "pat_scope_missing" }] },
+  "expect": {
+    "error": {
+      "code": "pat_scope_missing",
+      "class": "PermissionDeniedError",
+      "numericCode": 2023,
+      "hintContains": "\"transcripts:read\" permission"
+    },
+    "requests": { "GET /v1/transcripts": 1 }
+  }
+}

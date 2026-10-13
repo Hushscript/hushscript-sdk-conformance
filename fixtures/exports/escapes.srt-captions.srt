@@ -1,0 +1,32 @@
+1
+00:00:00,000 --> 00:00:03,000
+Speaker A: Tom & Jerry say 1 < 2 and 3 > 2.
+
+2
+00:00:03,000 --> 00:00:06,000
+Speaker A: A cue arrow looks like 00:01 -> 00:02 in
+plain text.
+
+3
+00:00:06,200 --> 00:00:09,500
+R&D <Lead>: Longer dashes -> and -> must not
+survive in SRT.
+
+4
+00:00:09,700 --> 00:00:13,000
+R&D <Lead>: First paragraph. Second paragraph after a
+blank line.
+
+5
+00:00:13,200 --> 00:00:17,000
+Speaker A: Whitespace line next. And the end. Windows
+break too.
+
+6
+00:00:17,200 --> 00:00:20,000
+Speaker A: Already escaped &amp; &lt;b&gt; stays
+literal text.
+
+7
+00:00:20,200 --> 00:00:25,000
+R&D <Lead>: <b>bold</b> & <i>italic</i> -> done

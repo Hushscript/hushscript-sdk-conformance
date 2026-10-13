@@ -1,0 +1,15 @@
+1
+00:00:00,000 --> 00:00:03,200
+Dana: Hello, thank you for calling the support line.
+
+2
+00:00:03,400 --> 00:00:07,800
+Speaker B: Hi, I wanted to ask about my last invoice. It looks wrong.
+
+3
+00:00:08,000 --> 00:00:12,500
+Dana: Of course. Can you tell me the invoice number and the date?
+
+4
+00:00:12,700 --> 00:00:28,900
+Speaker B: Sure. It is the one from the first of March, and I think I was charged twice for the same pack of minutes.
