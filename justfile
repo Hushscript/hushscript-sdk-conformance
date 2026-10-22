@@ -4,10 +4,9 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 export HOST_UID := `id -u`
 export HOST_GID := `id -g`
 
-node22_image := "node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
 node24_image := "node:24-bookworm-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"
 node26_image := "node:26-bookworm-slim@sha256:298992629d69bbd5b2b03ad57094d8e4fcb3a8eeb7c4e25d29de656519568913"
-node_image := node22_image
+node_image := node24_image
 hadolint_image := "hadolint/hadolint:v2.15.1@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d"
 actionlint_image := "rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667"
 zizmor_image := "ghcr.io/zizmorcore/zizmor:1.31.1@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9"
@@ -46,20 +45,20 @@ goldens:
     rm -rf fixtures/exports.old
     trap - EXIT
 
-# mock self-tests on Node 22 (default), 24, or 26; no network, repo mounted read-only
-test node="22":
+# mock self-tests on Node 24 (default) or 26; no network, repo mounted read-only
+test node="24":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{node}}" in 22) image="{{node22_image}}" ;; 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 22, 24, or 26" >&2; exit 2 ;; esac
+    case "{{node}}" in 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 24 or 26" >&2; exit 2 ;; esac
     docker run {{sandbox}} --network none --user "$(id -u):$(id -g)" \
       -v "$(pwd)":/work:ro -w /work -e HOME=/tmp \
       "$image" timeout 300 node --test "mock/test/*.test.mjs"
 
 # every static check: types, eslint, prettier, hadolint, actionlint, zizmor, shellcheck, gitleaks, typos
-lint node="22":
+lint node="24":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{node}}" in 22) image="{{node22_image}}" ;; 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 22, 24, or 26" >&2; exit 2 ;; esac
+    case "{{node}}" in 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 24 or 26" >&2; exit 2 ;; esac
     run() { docker run {{sandbox}} --network none --user "$(id -u):$(id -g)" -v "$(pwd)":/work:ro -w /work -e HOME=/tmp "$@"; }
     docker build --quiet --target dev --build-arg NODE_IMAGE="$image" -f docker/dev.Dockerfile -t hushscript-sdk-conformance-dev:local .
     docker run {{sandbox}} --network none --label sdk.test=1 hushscript-sdk-conformance-dev:local \
@@ -100,7 +99,7 @@ image-check:
 ci node="":
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ -n "{{node}}" ]; then versions="{{node}}"; else versions="22 24 26"; fi
+    if [ -n "{{node}}" ]; then versions="{{node}}"; else versions="24 26"; fi
     for v in $versions; do
       just lint "$v"
       just test "$v"
