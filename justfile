@@ -4,15 +4,14 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 export HOST_UID := `id -u`
 export HOST_GID := `id -g`
 
-node22_image := "node:22-bookworm-slim@sha256:c3de60bf2f9dd0ac6370e6117950ff62d6e339527e7472301c9c78a017978392"
-node24_image := "node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca920407d46d7ec7f87b20"
-node26_image := "node:26-bookworm-slim@sha256:86f07bc9c5dce4578cf37e5a418b7bfc7f817cda25cde66e2b66e95ed86c4567"
-node_image := node22_image
-hadolint_image := "hadolint/hadolint:v2.14.0@sha256:27086352fd5e1907ea2b934eb1023f217c5ae087992eb59fde121dce9c9ff21e"
-actionlint_image := "rhysd/actionlint:1.7.8@sha256:96d4a8c87dbbfb3bdd324f8fdc285fc3df5261e2decc619a4dd7e8ee52bbfd46"
-zizmor_image := "ghcr.io/zizmorcore/zizmor:1.16.0@sha256:a6460f1b6fe3dc08e588d314e73563bdd218ee30c995a4be5e9ee5bd300391ce"
+node24_image := "node:24-bookworm-slim@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"
+node26_image := "node:26-bookworm-slim@sha256:298992629d69bbd5b2b03ad57094d8e4fcb3a8eeb7c4e25d29de656519568913"
+node_image := node24_image
+hadolint_image := "hadolint/hadolint:v2.15.1@sha256:32dac94127fd60b7b7e3fbfc65e1383b9b5e25c9bfd7b8536de7a539fe68a12d"
+actionlint_image := "rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667"
+zizmor_image := "ghcr.io/zizmorcore/zizmor:1.31.1@sha256:42d409dbb851d4c5d35a058cf042b828bea1e3f2884378c526eb0974780e18d9"
 shellcheck_image := "koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d"
-gitleaks_image := "ghcr.io/gitleaks/gitleaks:v8.28.0@sha256:cdbb7c955abce02001a9f6c9f602fb195b7fadc1e812065883f695d1eeaba854"
+gitleaks_image := "ghcr.io/gitleaks/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
 sandbox := "--rm --init --label sdk.test=1 --cap-drop ALL --read-only --security-opt no-new-privileges --pids-limit 512 --memory 4g --tmpfs /tmp"
 app_dir := env_var_or_default("APP_DIR", "../../app")
 
@@ -46,20 +45,20 @@ goldens:
     rm -rf fixtures/exports.old
     trap - EXIT
 
-# mock self-tests on Node 22 (default), 24, or 26; no network, repo mounted read-only
-test node="22":
+# mock self-tests on Node 24 (default) or 26; no network, repo mounted read-only
+test node="24":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{node}}" in 22) image="{{node22_image}}" ;; 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 22, 24, or 26" >&2; exit 2 ;; esac
+    case "{{node}}" in 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 24 or 26" >&2; exit 2 ;; esac
     docker run {{sandbox}} --network none --user "$(id -u):$(id -g)" \
       -v "$(pwd)":/work:ro -w /work -e HOME=/tmp \
       "$image" timeout 300 node --test "mock/test/*.test.mjs"
 
 # every static check: types, eslint, prettier, hadolint, actionlint, zizmor, shellcheck, gitleaks, typos
-lint node="22":
+lint node="24":
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{node}}" in 22) image="{{node22_image}}" ;; 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 22, 24, or 26" >&2; exit 2 ;; esac
+    case "{{node}}" in 24) image="{{node24_image}}" ;; 26) image="{{node26_image}}" ;; *) echo "node must be 24 or 26" >&2; exit 2 ;; esac
     run() { docker run {{sandbox}} --network none --user "$(id -u):$(id -g)" -v "$(pwd)":/work:ro -w /work -e HOME=/tmp "$@"; }
     docker build --quiet --target dev --build-arg NODE_IMAGE="$image" -f docker/dev.Dockerfile -t hushscript-sdk-conformance-dev:local .
     docker run {{sandbox}} --network none --label sdk.test=1 hushscript-sdk-conformance-dev:local \
@@ -100,7 +99,7 @@ image-check:
 ci node="":
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ -n "{{node}}" ]; then versions="{{node}}"; else versions="22 24 26"; fi
+    if [ -n "{{node}}" ]; then versions="{{node}}"; else versions="24 26"; fi
     for v in $versions; do
       just lint "$v"
       just test "$v"
