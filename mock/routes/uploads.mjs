@@ -122,6 +122,8 @@ function optionsSummary(raw) {
     language_code: typeof o['language_code'] === 'string' ? o['language_code'] : null,
     speaker_detection: targets.length > 0 ? true : o['speaker_detection'] !== false,
     medical_mode: o['medical_mode'] === true,
+    vet_mode: o['vet_mode'] === true,
+    keep_disfluencies: o['keep_disfluencies'] === true,
     multichannel: o['multichannel'] === true,
     translation_targets: targets,
     keyterms,

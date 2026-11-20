@@ -191,6 +191,8 @@ function listTranscripts(ctx) {
         language_code: null,
         speaker_detection: true,
         medical_mode: false,
+        vet_mode: false,
+        keep_disfluencies: false,
         multichannel: false,
         translation_targets: [],
         keyterms: false,
