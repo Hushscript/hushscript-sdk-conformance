@@ -105,6 +105,43 @@ test('create: typed key terms or prompt are refused for a language that cannot u
   });
 });
 
+test('create: typed key terms over 1,000 words in total are refused before any hold', async () => {
+  await withMock(async (m) => {
+    await select(m, { account: { balance_seconds: 36000, max_active_jobs: 500 } });
+    /** @param {Record<string, unknown>} transcription_options */
+    const create = (transcription_options) =>
+      m.api('POST', '/v1/uploads', {
+        json: { size_bytes: FILE_SIZE, duration_seconds: 21, transcription_options },
+      });
+    /**
+     * @param {string} prefix
+     * @param {number} terms
+     * @param {number} wordsEach
+     */
+    const phrases = (prefix, terms, wordsEach) =>
+      Array.from({ length: terms }, (_, t) =>
+        Array.from({ length: wordsEach }, (_, w) => `${prefix}${t}x${w}`).join(' '),
+      );
+    assert.equal((await create({ keyterms_prompt: phrases('a', 500, 2) })).status, 200);
+    const over = await create({ keyterms_prompt: [...phrases('a', 500, 2), 'extra'] });
+    assert.deepEqual([over.status, over.json.error, over.json.code], [422, 'invalid_transcription_options', 1033]);
+    const split = await create({ keyterms_prompt: phrases('a', 300, 2), one_off_keyterms: phrases('b', 201, 2) });
+    assert.equal(split.status, 422);
+    assert.equal(
+      (await create({ keyterms_prompt: phrases('a', 500, 2), one_off_keyterms: phrases('a', 500, 2) })).status,
+      200,
+    );
+    assert.equal(
+      (await create({ keyterms_prompt: ['  two   words  ', 'two   words'], prompt: 'word '.repeat(399) })).status,
+      200,
+    );
+    assert.equal((await create({ language_code: 'en', keyterms_prompt: phrases('a', 500, 2) })).status, 200);
+    assert.equal((await create({ keyterms_prompt: [...phrases('a', 100, 10), 'x'] })).status, 422);
+    const state = (await m.api('GET', '/__state', { auth: false })).json;
+    assert.deepEqual([state.jobs, state.holds], [4, 4]);
+  });
+});
+
 test('create: 402 with details when the balance is short, 429 at the active-job cap', async () => {
   await withMock(async (m) => {
     await select(m, { account: { balance_seconds: 10, held_seconds: 4 } });

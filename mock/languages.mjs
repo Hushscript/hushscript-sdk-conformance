@@ -159,3 +159,28 @@ export function refusesTypedContext(options) {
   if (codes.some((entry) => !STT37_LANGUAGES.includes(entry) && !UNIVERSAL_2_LANGUAGES.includes(entry))) return false;
   return codes.every((entry) => !STT37_LANGUAGES.includes(entry));
 }
+
+/** Mirrors the API's `MAX_KEYTERM_TOTAL_WORDS`. */
+export const MAX_KEYTERM_TOTAL_WORDS = 1000;
+
+/**
+ * Whether the typed key terms (`keyterms_prompt` plus `one_off_keyterms`, trimmed and deduped) total more than
+ * `MAX_KEYTERM_TOTAL_WORDS` whitespace-split words. The prompt is sent separately and never counts here.
+ * @param {Record<string, unknown>} options
+ * @returns {boolean}
+ */
+export function exceedsKeytermWords(options) {
+  const seen = new Set();
+  let words = 0;
+  for (const list of [options['keyterms_prompt'], options['one_off_keyterms']]) {
+    if (!Array.isArray(list)) continue;
+    for (const raw of list) {
+      if (typeof raw !== 'string') continue;
+      const term = raw.trim();
+      if (term === '' || seen.has(term)) continue;
+      seen.add(term);
+      words += term.split(/\s+/u).length;
+    }
+  }
+  return words > MAX_KEYTERM_TOTAL_WORDS;
+}
