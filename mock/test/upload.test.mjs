@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { test } from 'node:test';
-import { STT37_LANGUAGES, UNIVERSAL_2_LANGUAGES } from '../languages.mjs';
+import { exceedsKeytermWords, STT37_LANGUAGES, UNIVERSAL_2_LANGUAGES } from '../languages.mjs';
 import { FILE_SIZE, createJob, partBytes, select, withMock } from './helpers.mjs';
 
 const OPEN = { account: { balance_seconds: 36000 } };
@@ -140,6 +140,24 @@ test('create: typed key terms over 1,000 words in total are refused before any h
     const state = (await m.api('GET', '/__state', { auth: false })).json;
     assert.deepEqual([state.jobs, state.holds], [4, 4]);
   });
+});
+
+test('key terms count words on Unicode White_Space, as the API does', () => {
+  /** @param {number} count */
+  const words = (count) => Array.from({ length: count }, (_, i) => `w${i}`);
+  /**
+   * @param {string} separator
+   * @param {number} count
+   */
+  const joined = (separator, count) => Array.from({ length: count }, (_, i) => `${i}${separator}x`);
+  // U+0085 splits words in Rust but not in JS \s: 500 terms of two words each is exactly at the cap.
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\u0085', 500) }), false);
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\u0085', 501) }), true);
+  // U+FEFF is JS \s but not White_Space: "a\uFEFFb" is one word.
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\uFEFF', 1000) }), false);
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\uFEFF', 1001) }), true);
+  // A lone U+0085 trims to blank, so it is not a term.
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: [...words(1000), '\u0085'] }), false);
 });
 
 test('create: 402 with details when the balance is short, 429 at the active-job cap', async () => {

@@ -163,6 +163,10 @@ export function refusesTypedContext(options) {
 /** Mirrors the API's `MAX_KEYTERM_TOTAL_WORDS`. */
 export const MAX_KEYTERM_TOTAL_WORDS = 1000;
 
+// Unicode White_Space, as Rust's str::trim and split_whitespace: JS trim() and \s differ at U+0085 and U+FEFF.
+const WHITE_SPACE_EDGES = /^\p{White_Space}+|\p{White_Space}+$/gu;
+const WHITE_SPACE_RUN = /\p{White_Space}+/u;
+
 /**
  * Whether the typed key terms (`keyterms_prompt` plus `one_off_keyterms`, trimmed and deduped) total more than
  * `MAX_KEYTERM_TOTAL_WORDS` whitespace-split words. The prompt is sent separately and never counts here.
@@ -176,10 +180,10 @@ export function exceedsKeytermWords(options) {
     if (!Array.isArray(list)) continue;
     for (const raw of list) {
       if (typeof raw !== 'string') continue;
-      const term = raw.trim();
+      const term = raw.replace(WHITE_SPACE_EDGES, '');
       if (term === '' || seen.has(term)) continue;
       seen.add(term);
-      words += term.split(/\s+/u).length;
+      words += term.split(WHITE_SPACE_RUN).length;
     }
   }
   return words > MAX_KEYTERM_TOTAL_WORDS;
