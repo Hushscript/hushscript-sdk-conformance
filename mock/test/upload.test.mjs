@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { test } from 'node:test';
+import { STT37_LANGUAGES, UNIVERSAL_2_LANGUAGES } from '../languages.mjs';
 import { FILE_SIZE, createJob, partBytes, select, withMock } from './helpers.mjs';
 
 const OPEN = { account: { balance_seconds: 36000 } };
@@ -69,6 +70,38 @@ test('create: validation, balance hold and idempotent replay', async () => {
     const other = await createJob(api, { key: 'a-different-key-0000' });
     assert.notEqual(other.json.job_id, first.json.job_id);
     assert.equal((await api('GET', '/__state', { auth: false })).json.jobs, 2);
+  });
+});
+
+test('create: typed key terms or prompt are refused for a language that cannot use them', async () => {
+  await withMock(async (m) => {
+    await select(m, { account: { balance_seconds: 36000, max_active_jobs: 500 } });
+    /** @param {Record<string, unknown>} transcription_options */
+    const create = (transcription_options) =>
+      m.api('POST', '/v1/uploads', {
+        json: { size_bytes: FILE_SIZE, duration_seconds: 21, transcription_options },
+      });
+    assert.equal(STT37_LANGUAGES.length + UNIVERSAL_2_LANGUAGES.length, 103);
+    for (const language_code of UNIVERSAL_2_LANGUAGES) {
+      for (const typed of [{ keyterms_prompt: ['Hushscript'] }, { prompt: 'Names.' }, { one_off_keyterms: ['x'] }]) {
+        const res = await create({ language_code, ...typed });
+        assert.deepEqual([res.status, res.json.error, res.json.code], [422, 'invalid_transcription_options', 1033]);
+      }
+    }
+    for (const language_code of STT37_LANGUAGES) {
+      assert.equal((await create({ language_code, keyterms_prompt: ['Hushscript'], prompt: 'Names.' })).status, 200);
+    }
+    const refused = await create({ language_code: ' PL ', one_off_prompt: 'Names.' });
+    assert.equal(refused.json.error, 'invalid_transcription_options');
+    assert.equal((await create({ expected_languages: ['pl', 'th'], prompt: 'Names.' })).status, 422);
+    assert.equal((await create({ expected_languages: ['pl', 'en'], prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ expected_languages: [], prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ language_code: 'xx', prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ language_code: 'pl', keyterms_prompt: [' ', ''], prompt: '  ' })).status, 200);
+    assert.equal((await create({ language_code: 'pl', keep_disfluencies: true, dictionary_ids: ['d1'] })).status, 200);
+    const state = (await m.api('GET', '/__state', { auth: false })).json;
+    assert.deepEqual([state.jobs, state.holds], [STT37_LANGUAGES.length + 6, STT37_LANGUAGES.length + 6]);
   });
 });
 
