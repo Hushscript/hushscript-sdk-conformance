@@ -1,6 +1,7 @@
 // @ts-check
 import { createHash } from 'node:crypto';
 import { createReadStream, statSync } from 'node:fs';
+import { exceedsKeytermWords, refusesTypedContext } from '../languages.mjs';
 import { BASE_EPOCH, activeJobs, limitsView } from '../state.mjs';
 import { errorReply, field, isInt, isRecord, withFutureFields } from '../util.mjs';
 
@@ -191,6 +192,10 @@ function createUpload(ctx) {
   }
   if (state.config.expectedUploadFile !== undefined && size !== statSync(fixturePath(state)).size) {
     return errorReply('size_out_of_range');
+  }
+  const rawOptions = body['transcription_options'];
+  if (isRecord(rawOptions) && (refusesTypedContext(rawOptions) || exceedsKeytermWords(rawOptions))) {
+    return errorReply('invalid_transcription_options');
   }
   const maxActive = state.config.account?.max_active_jobs ?? 50;
   if (activeJobs(state).length + (state.config.account?.active_jobs ?? 0) >= maxActive) {
