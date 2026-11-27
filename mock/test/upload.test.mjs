@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { request } from 'node:http';
 import { test } from 'node:test';
+import { exceedsKeytermWords, STT37_LANGUAGES, UNIVERSAL_2_LANGUAGES } from '../languages.mjs';
 import { FILE_SIZE, createJob, partBytes, select, withMock } from './helpers.mjs';
 
 const OPEN = { account: { balance_seconds: 36000 } };
@@ -70,6 +71,93 @@ test('create: validation, balance hold and idempotent replay', async () => {
     assert.notEqual(other.json.job_id, first.json.job_id);
     assert.equal((await api('GET', '/__state', { auth: false })).json.jobs, 2);
   });
+});
+
+test('create: typed key terms or prompt are refused for a language that cannot use them', async () => {
+  await withMock(async (m) => {
+    await select(m, { account: { balance_seconds: 36000, max_active_jobs: 500 } });
+    /** @param {Record<string, unknown>} transcription_options */
+    const create = (transcription_options) =>
+      m.api('POST', '/v1/uploads', {
+        json: { size_bytes: FILE_SIZE, duration_seconds: 21, transcription_options },
+      });
+    assert.equal(STT37_LANGUAGES.length + UNIVERSAL_2_LANGUAGES.length, 103);
+    for (const language_code of UNIVERSAL_2_LANGUAGES) {
+      for (const typed of [{ keyterms_prompt: ['Hushscript'] }, { prompt: 'Names.' }, { one_off_keyterms: ['x'] }]) {
+        const res = await create({ language_code, ...typed });
+        assert.deepEqual([res.status, res.json.error, res.json.code], [422, 'invalid_transcription_options', 1033]);
+      }
+    }
+    for (const language_code of STT37_LANGUAGES) {
+      assert.equal((await create({ language_code, keyterms_prompt: ['Hushscript'], prompt: 'Names.' })).status, 200);
+    }
+    const refused = await create({ language_code: ' PL ', one_off_prompt: 'Names.' });
+    assert.equal(refused.json.error, 'invalid_transcription_options');
+    assert.equal((await create({ expected_languages: ['pl', 'th'], prompt: 'Names.' })).status, 422);
+    assert.equal((await create({ expected_languages: ['pl', 'en'], prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ expected_languages: [], prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ language_code: 'xx', prompt: 'Names.' })).status, 200);
+    assert.equal((await create({ language_code: 'pl', keyterms_prompt: [' ', ''], prompt: '  ' })).status, 200);
+    assert.equal((await create({ language_code: 'pl', keep_disfluencies: true, dictionary_ids: ['d1'] })).status, 200);
+    const state = (await m.api('GET', '/__state', { auth: false })).json;
+    assert.deepEqual([state.jobs, state.holds], [STT37_LANGUAGES.length + 6, STT37_LANGUAGES.length + 6]);
+  });
+});
+
+test('create: typed key terms over 1,000 words in total are refused before any hold', async () => {
+  await withMock(async (m) => {
+    await select(m, { account: { balance_seconds: 36000, max_active_jobs: 500 } });
+    /** @param {Record<string, unknown>} transcription_options */
+    const create = (transcription_options) =>
+      m.api('POST', '/v1/uploads', {
+        json: { size_bytes: FILE_SIZE, duration_seconds: 21, transcription_options },
+      });
+    /**
+     * @param {string} prefix
+     * @param {number} terms
+     * @param {number} wordsEach
+     */
+    const phrases = (prefix, terms, wordsEach) =>
+      Array.from({ length: terms }, (_, t) =>
+        Array.from({ length: wordsEach }, (_, w) => `${prefix}${t}x${w}`).join(' '),
+      );
+    assert.equal((await create({ keyterms_prompt: phrases('a', 500, 2) })).status, 200);
+    const over = await create({ keyterms_prompt: [...phrases('a', 500, 2), 'extra'] });
+    assert.deepEqual([over.status, over.json.error, over.json.code], [422, 'invalid_transcription_options', 1033]);
+    const split = await create({ keyterms_prompt: phrases('a', 300, 2), one_off_keyterms: phrases('b', 201, 2) });
+    assert.equal(split.status, 422);
+    assert.equal(
+      (await create({ keyterms_prompt: phrases('a', 500, 2), one_off_keyterms: phrases('a', 500, 2) })).status,
+      200,
+    );
+    assert.equal(
+      (await create({ keyterms_prompt: ['  two   words  ', 'two   words'], prompt: 'word '.repeat(399) })).status,
+      200,
+    );
+    assert.equal((await create({ language_code: 'en', keyterms_prompt: phrases('a', 500, 2) })).status, 200);
+    assert.equal((await create({ keyterms_prompt: [...phrases('a', 100, 10), 'x'] })).status, 422);
+    const state = (await m.api('GET', '/__state', { auth: false })).json;
+    assert.deepEqual([state.jobs, state.holds], [4, 4]);
+  });
+});
+
+test('key terms count words on Unicode White_Space, as the API does', () => {
+  /** @param {number} count */
+  const words = (count) => Array.from({ length: count }, (_, i) => `w${i}`);
+  /**
+   * @param {string} separator
+   * @param {number} count
+   */
+  const joined = (separator, count) => Array.from({ length: count }, (_, i) => `${i}${separator}x`);
+  // U+0085 splits words in Rust but not in JS \s: 500 terms of two words each is exactly at the cap.
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\u0085', 500) }), false);
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\u0085', 501) }), true);
+  // U+FEFF is JS \s but not White_Space: "a\uFEFFb" is one word.
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\uFEFF', 1000) }), false);
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: joined('\uFEFF', 1001) }), true);
+  // A lone U+0085 trims to blank, so it is not a term.
+  assert.equal(exceedsKeytermWords({ keyterms_prompt: [...words(1000), '\u0085'] }), false);
 });
 
 test('create: 402 with details when the balance is short, 429 at the active-job cap', async () => {

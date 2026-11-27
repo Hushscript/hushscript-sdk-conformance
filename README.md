@@ -12,7 +12,7 @@ The SDKs and the CLI:
 [Go](https://github.com/Hushscript/hushscript-sdk-go),
 [PHP](https://github.com/Hushscript/hushscript-sdk-php) and
 [CLI](https://github.com/Hushscript/hushscript-cli).
-Docs: <https://hushscript.com/sdks>.
+Docs: <https://hushscript.com/developers#sdks-and-cli>.
 
 Everything runs in containers. Nothing here needs ffmpeg, Node or anything else
 on the host except Docker and [just](https://github.com/casey/just).
